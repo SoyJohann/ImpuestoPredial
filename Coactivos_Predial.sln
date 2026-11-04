@@ -5,6 +5,8 @@ VisualStudioVersion = 17.8.34511.84
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coactivos_Predial", "Coactivos_Predial.csproj", "{22DF2379-6E63-425B-9A3A-691407C0F976}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coactivos_Predial.Tests", "Coactivos_Predial.Tests\Coactivos_Predial.Tests.csproj", "{8BC0C605-3186-44B8-9161-D62BB42A8F24}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{22DF2379-6E63-425B-9A3A-691407C0F976}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{22DF2379-6E63-425B-9A3A-691407C0F976}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{22DF2379-6E63-425B-9A3A-691407C0F976}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{8BC0C605-3186-44B8-9161-D62BB42A8F24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BC0C605-3186-44B8-9161-D62BB42A8F24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BC0C605-3186-44B8-9161-D62BB42A8F24}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BC0C605-3186-44B8-9161-D62BB42A8F24}.Release|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

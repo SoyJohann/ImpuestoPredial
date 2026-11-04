@@ -1,6 +1,7 @@
 using Coactivos_Predial.Shared.AppDbContext;
 using Coactivos_Predial.Shared.Services.SDatabase;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 namespace Coactivos_Predial.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class ArchivosController : ControllerBase
     {
@@ -23,45 +25,31 @@ namespace Coactivos_Predial.Controllers
         }
 
         [HttpGet("{fileName}")]
-        public async Task<IActionResult> GetFile(string fileName, [FromQuery] string? mun = null)
+        public async Task<IActionResult> GetFile(string fileName)
         {
             try
             {
-                string? municipio = mun;
-                if (string.IsNullOrEmpty(municipio))
-                {
-                    var userIdStr = User.FindFirst("UserId")?.Value;
-                    if (int.TryParse(userIdStr, out var userId))
-                    {
-                        await using var master = await _masterFactory.CreateDbContextAsync();
-                        municipio = await master.usuarios
-                            .Where(u => u.id == userId)
-                            .Select(u => u.mun)
-                            .FirstOrDefaultAsync();
-                    }
-                }
+                var userIdStr = User.FindFirst("UserId")?.Value;
+                if (!int.TryParse(userIdStr, out var userId)) return Forbid();
+                await using var master = await _masterFactory.CreateDbContextAsync();
+                var municipio = await master.usuarios.Where(u => u.id == userId).Select(u => u.mun).FirstOrDefaultAsync();
+                if (string.IsNullOrWhiteSpace(municipio)) return Forbid();
 
                 var baseFolder = _connectionService.GetStorageStringForMunicipio(municipio);
-                var filePath = Path.Combine(baseFolder, fileName);
+                var safeName = Path.GetFileName(fileName);
+                if (!string.Equals(safeName, fileName, StringComparison.Ordinal)) return NotFound();
+                var fullBase = Path.GetFullPath(baseFolder);
+                var filePath = Path.GetFullPath(Path.Combine(fullBase, safeName));
+                var normalizedBase = fullBase.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                if (!filePath.StartsWith(normalizedBase, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)) return NotFound();
+                if (!System.IO.File.Exists(filePath)) return NotFound();
 
-                Console.WriteLine($"el filepath en el controller es : {filePath}");
-                if (System.IO.File.Exists(filePath))
-                {
-                    var memory = new MemoryStream();
-                    using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                    {
-                        await stream.CopyToAsync(memory);
-                    }
-                    memory.Position = 0;
-
-                    Console.WriteLine($"Archivo {fileName} leído correctamente.");
-                    return File(memory, "application/pdf", fileName);
-                }
-                else
-                {
-                    Console.WriteLine($"El archivo {fileName} no existe en el servidor.");
-                    return NotFound();
-                }
+                Response.Headers["X-Content-Type-Options"] = "nosniff";
+                Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
+                Response.Headers["Cache-Control"] = "private, max-age=0, must-revalidate";
+                Response.Headers["Accept-Ranges"] = "bytes";
+                var info = new FileInfo(filePath);
+                return File(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read), "application/pdf", safeName, info.LastWriteTimeUtc, null, true);
             }
             catch (Exception ex)
             {

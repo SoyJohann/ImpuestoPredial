@@ -26,6 +26,10 @@
 
   <ItemGroup>
     <Folder Include="Pages\Rep_Coactivo\" />
+    <Compile Remove="Coactivos_Predial.Tests/**/*.cs" />
+    <Content Remove="Coactivos_Predial.Tests/**/*" />
+    <None Remove="Coactivos_Predial.Tests/**/*" />
+    <EmbeddedResource Remove="Coactivos_Predial.Tests/**/*" />
   </ItemGroup>
 
 </Project>

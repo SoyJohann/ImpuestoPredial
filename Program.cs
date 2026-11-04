@@ -9,6 +9,7 @@ using Coactivos_Predial.Shared.Services.FileHandler;
 using Coactivos_Predial.Shared.Services.FontResolver;
 using Coactivos_Predial.Shared.Services.SCoactivos;
 using Coactivos_Predial.Shared.Services.SDatabase;
+using Coactivos_Predial.Shared.Services.DocumentoFiles;
 using Coactivos_Predial.Shared.Services.SImportados;
 using Coactivos_Predial.Shared.Services.SLogin;
 using Coactivos_Predial.Shared.Services.SParametros;
@@ -59,6 +60,8 @@ builder.Services.AddScoped<ITenantConnectionFactory, TenantConnectionFactory>();
 // Servicios de conexión y usuario
 builder.Services.AddScoped<IConnectionService, ConnectionService>();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
+builder.Services.AddScoped<IDocumentoFileService, DocumentoFileService>();
+builder.Services.AddScoped<IDocumentoLinkService, DocumentoLinkService>();
 
 // Servicios de negocio
 builder.Services.AddScoped<ICoactivosService, CoactivosService>();
@@ -86,6 +89,26 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
         options.AccessDeniedPath = "/Forbidden/";
         options.LoginPath = "/";
+        options.Events.OnRedirectToLogin = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            }
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -101,12 +124,13 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(DocumentoEndpoints.PdfJsStaticFileOptions());
 app.UseAuthentication();
 app.UseAntiforgery();
 app.UseAuthorization();
 app.MapRazorPages();
 app.MapControllers();
+app.MapDocumentoEndpoints();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
@@ -118,3 +142,5 @@ var cookiePolicyOptions = new CookiePolicyOptions
 app.UseCookiePolicy(cookiePolicyOptions);
 
 app.Run();
+
+public partial class Program { }
