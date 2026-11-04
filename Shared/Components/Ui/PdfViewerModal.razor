@@ -1,0 +1,101 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@if (_isOpen)
+{
+    <div class="fixed inset-0 z-[1200] flex items-center justify-center bg-ink-900/70 p-2 sm:p-4" role="presentation">
+        <section class="flex h-[94vh] w-[96vw] max-w-[1500px] min-h-0 flex-col overflow-hidden rounded-panel border border-line bg-surface shadow-xl sm:h-[90vh] sm:w-[90vw]"
+                 role="dialog" aria-modal="true" aria-label="Visor de documento PDF" tabindex="-1">
+            <header class="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+                <h2 class="text-base font-semibold text-ink-900">@Title</h2>
+                <button type="button" class="ui-btn inline-flex h-8 items-center rounded-ui border border-line px-3 text-sm text-ink-700 hover:bg-paper" @onclick="Close">Cerrar</button>
+            </header>
+            <div class="relative min-h-0 flex-1 bg-paper">
+                @if (_loading)
+                {
+                    <div class="absolute inset-0 z-10 flex items-center justify-center bg-surface/90" role="status">
+                        <UiLoading Text="Cargando documento…" />
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <div class="absolute inset-x-0 top-0 z-20 border-b border-warn-600/30 bg-warn-600/10 px-4 py-3 text-sm text-ink-900" role="alert">
+                        @_error
+                        @if (!string.IsNullOrWhiteSpace(_viewUrl))
+                        {
+                            <a class="ml-2 font-medium text-accent-700 underline" href="@_viewUrl" target="_blank" rel="noopener">Abrir en pestaña nueva</a>
+                            <a class="ml-2 font-medium text-accent-700 underline" href="@_downloadUrl">Descargar</a>
+                        }
+                    </div>
+                }
+                <iframe @key="_viewUrl" src="@ViewerSrc" title="Visor de PDF" class="h-full w-full border-0"></iframe>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    private bool _isOpen;
+    private bool _loading;
+    private string? _viewUrl;
+    private string? _downloadUrl;
+    private string? _error;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<PdfViewerModal>? _self;
+
+    [Parameter] public string Title { get; set; } = "Visor de documento PDF";
+    private string ViewerSrc => "/lib/pdfjs/web/viewer.html?file=" + Uri.EscapeDataString(_viewUrl ?? string.Empty) + "#disableautofetch=true&disablestream=true&rangechunksize=65536";
+
+    public async Task OpenAsync(string viewUrl, string downloadUrl)
+    {
+        _viewUrl = viewUrl;
+        _downloadUrl = downloadUrl;
+        _error = null;
+        _loading = true;
+        _isOpen = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void Close() { _isOpen = false; _error = null; }
+
+    [JSInvokable]
+    public void ViewerLoaded()
+    {
+        _loading = false;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void ViewerFailed(string reason)
+    {
+        _loading = false;
+        _error = reason.Contains("401", StringComparison.OrdinalIgnoreCase) || reason.Contains("unauthorized", StringComparison.OrdinalIgnoreCase)
+            ? "Tu sesión expiró, inicia sesión de nuevo."
+            : "No se pudo cargar el documento. Puede abrirlo en otra pestaña o descargarlo.";
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void ViewerClose() => Close();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Shared/Components/Ui/PdfViewerModal.razor.js");
+            _self = DotNetObjectReference.Create(this);
+            await _module.InvokeVoidAsync("attach", _self);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            await _module.InvokeVoidAsync("detach");
+            await _module.DisposeAsync();
+        }
+        _self?.Dispose();
+    }
+}

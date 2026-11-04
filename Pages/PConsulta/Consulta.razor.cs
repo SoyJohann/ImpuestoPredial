@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Coactivos_Predial.Models;
 using Coactivos_Predial.Shared.Models;
+using Coactivos_Predial.Shared.Components.Ui;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 
@@ -12,6 +13,12 @@ public partial class Consulta
     public List<Procesos> procesoslist { get; set; } = new List<Procesos>();
     public List<Propietarios> propietlist { get; set; } = new List<Propietarios>();
     private List<Documentos> listDocs = new List<Documentos>();
+    private string filtroDocumentos = string.Empty;
+    private PdfViewerModal? pdfViewerModal;
+    private IEnumerable<Documentos> DocumentosFiltrados => string.IsNullOrWhiteSpace(filtroDocumentos)
+        ? listDocs
+        : listDocs.Where(doc => (doc.nombre ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase)
+            || (doc.archivo ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase));
     private Documentos Docsobj = new Documentos();
     public List<Archivo> archivo = new();
     private List<IBrowserFile> loadedFiles = new();
@@ -436,75 +443,14 @@ public partial class Consulta
         }
     }
 
-    public async Task Muestra_Pdf(string xfile)
+    private async Task AbrirPdf(int documentId)
     {
-        try
+        var links = await DocumentoLinkService.GetLinksAsync(documentId);
+        if (links is null)
         {
-            var result = await _archivoService.GetFiles(xfile);
-
-            Console.WriteLine($"xfile en getarchivos:{xfile}");
-            if (result == null || result.Count == 0)
-            {
-                Console.WriteLine("No se encontraron archivos.");
-            }
-            else
-            {
-                foreach (var item in result)
-                {
-                    await DescargarYAbrirArchivo(item.Name);
-                }
-            }
+            await JSRuntime.InvokeVoidAsync("alert", "No se pudo validar el acceso al documento.");
+            return;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-        }
-    }
-
-    private async Task DescargarYAbrirArchivo(string fileName)
-    {
-        try
-        {
-            string fileUrl = $"{NavigationManager.BaseUri}api/archivos/{fileName}";
-
-            var fileBytes = await DescargarArchivo(fileUrl);
-
-            if (fileBytes != null)
-            {
-                var contentStream = new DotNetStreamReference(new MemoryStream(fileBytes));
-
-                await JSRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, contentStream);
-
-                Console.WriteLine($"Archivo {fileName} descargado y abierto correctamente.");
-            }
-            else
-            {
-                Console.WriteLine($"Error: No se pudo descargar el archivo {fileName}.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error al descargar y abrir el archivo: {ex.Message}");
-        }
-    }
-
-    private async Task<byte[]> DescargarArchivo(string fileUrl)
-    {
-        try
-        {
-            Console.WriteLine($"Intentando descargar desde {fileUrl}");
-
-            HttpResponseMessage response = await _httpClient.GetAsync(fileUrl);
-            response.EnsureSuccessStatusCode();
-            byte[] archivoBytes = await response.Content.ReadAsByteArrayAsync();
-
-            Console.WriteLine($"Archivo descargado correctamente desde {fileUrl}");
-            return archivoBytes;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error al descargar el archivo: {ex.Message}");
-            return null;
-        }
+        if (pdfViewerModal is not null) await pdfViewerModal.OpenAsync(links.ViewUrl, links.DownloadUrl);
     }
 }

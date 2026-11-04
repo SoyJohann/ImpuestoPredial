@@ -13,13 +13,12 @@
 @inject IConfiguration config
 @inject IArchivoService _archivoService
 @inject IJSRuntime JSRuntime
-@inject HttpClient _httpClient
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject Coactivos_Predial.Shared.Services.DocumentoFiles.IDocumentoLinkService DocumentoLinkService
 @inject IConnectionService _connectionService
 @inject BusquedaService busquedaService
 @inject IPrediosService comparendoService
 @inject IpropietariosService propietariosService
-@inject NavigationManager NavigationManager
 
 <PageTitle>Consulta de predio</PageTitle>
 
@@ -145,7 +144,11 @@ else if (!busquedaRealizada)
                 }
                 else
                 {
-                    <UiTable>
+                    <div class="border-b border-line px-3 py-2">
+                        <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
+                               class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
+                    </div>
+                    <UiTable Class="min-w-[690px] max-h-[calc(100vh-430px)] min-h-[160px] overscroll-contain">
                         <Header>
                             <tr>
                                 <th>Documento</th>
@@ -205,7 +208,7 @@ else if (!busquedaRealizada)
                             </tr>
                         </Header>
                         <ChildContent>
-                            @foreach (var doc in listDocs)
+                            @foreach (var doc in DocumentosFiltrados)
                             {
                                 <tr>
                                     <td>
@@ -215,10 +218,13 @@ else if (!busquedaRealizada)
                                     <td class="font-numeric">@FechaTexto(doc.fecha)</td>
                                     <td class="actions">
                                         <div class="flex items-center justify-end gap-1">
-                                            <UiButton Variant="ghost" Size="sm" OnClick="@((e) => Muestra_Pdf(doc.archivo))">
-                                                <UiIcon Name="download" />
-                                                Descargar
+                                            <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.id))">
+                                                <UiIcon Name="file-text" />
+                                                Ver
                                             </UiButton>
+                                            <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.id/descargar">
+                                                <UiIcon Name="download" /> Descargar
+                                            </a>
                                             <AuthorizeView Roles="2">
                                                 <Authorized>
                                                     <UiButton Variant="danger" Size="sm" OnClick="@((e) => PermisoEliminar(doc))">
@@ -237,6 +243,7 @@ else if (!busquedaRealizada)
             </ChildContent>
         </UiPanel>
     </div>
+    <PdfViewerModal @ref="pdfViewerModal" />
 
     <!-- Procesos de cobro coactivo -->
     <div class="mt-4">
@@ -352,23 +359,6 @@ else if (!busquedaRealizada)
          Message="@(aviso ?? string.Empty)"
          Variant="ok"
          OnClose="CerrarAviso" />
-
-<script>
-    function downloadFileFromStream(fileName, contentStreamReference) {
-        contentStreamReference.arrayBuffer().then(arrayBuffer => {
-            const blob = new Blob([arrayBuffer]);
-            const url = URL.createObjectURL(blob);
-            const anchorElement = document.createElement('a');
-            anchorElement.href = url;
-            anchorElement.download = fileName ?? '';
-            anchorElement.click();
-            anchorElement.remove();
-            URL.revokeObjectURL(url);
-        });
-    }
-
-    window.downloadFileFromStream = downloadFileFromStream;
-</script>
 
 @code {
     private bool busquedaRealizada;
