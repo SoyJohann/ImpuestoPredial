@@ -1,0 +1,56 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.Extensions.Hosting
+
+@inject IHostEnvironment Env
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link href="css/site.css" rel="stylesheet" />
+    <link href="Coactivos_Predial.styles.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet @rendermode="InteractiveServer" />
+</head>
+<body>
+    <Routes @rendermode="InteractiveServer" />
+
+    <div id="blazor-error-ui"
+         class="fixed inset-x-0 bottom-0 z-[1000] border-t border-line bg-surface px-4 py-3"
+         role="alert">
+        <div class="mx-auto flex max-w-[1280px] flex-wrap items-center gap-3">
+            <span class="min-w-0 flex-1 text-sm text-ink-700">@ErrorText</span>
+            <a href=""
+               class="reload ui-btn inline-flex h-8 shrink-0 items-center justify-center rounded-ui border border-accent-700 bg-accent-700 px-3.5 text-sm font-medium text-white transition-colors duration-150 hover:border-accent-800 hover:bg-accent-800">
+                Recargar
+            </a>
+            <a href="/"
+               class="ui-btn inline-flex h-8 shrink-0 items-center justify-center rounded-ui border border-line bg-surface px-3.5 text-sm font-medium text-ink-900 transition-colors duration-150 hover:bg-paper">
+                Ir al inicio
+            </a>
+            <button type="button"
+                    class="dismiss flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-ui text-lg text-ink-500 transition-colors duration-150 hover:bg-paper hover:text-ink-900"
+                    aria-label="Cerrar aviso">&times;</button>
+        </div>
+    </div>
+
+    <script src="_framework/blazor.web.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <script src="~/js/pdfgenerator.js"></script>
+    <script src="~/js/JavaScript.js"></script>
+</body>
+</html>
+
+@code {
+    private string ErrorText =>
+        Env.IsDevelopment()
+            ? "Se perdió la conexión o ocurrió un error no controlado. Revise la consola del navegador y recargue la página."
+            : "Se perdió la conexión con el servidor. Recargue la página para continuar.";
+}

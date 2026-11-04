@@ -1,0 +1,33 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+<div>
+    <label for="@Id"
+           class="group flex cursor-pointer items-center gap-3 rounded-ui border border-dashed border-line bg-paper/60 px-4 py-3 transition-colors duration-150 hover:border-accent-700 hover:bg-accent-50/60">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border border-line bg-surface text-ink-500 group-hover:border-accent-700/30 group-hover:text-accent-700">
+            <UiIcon Name="upload" Size="18" />
+        </span>
+        <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-medium text-ink-900">@(string.IsNullOrWhiteSpace(FileName) ? "Seleccionar un PDF" : FileName)</span>
+            <span class="block text-xs text-ink-500">@Help</span>
+        </span>
+        <span class="hidden text-xs font-medium text-accent-700 sm:block">Examinar</span>
+        <InputFile id="@Id"
+                   OnChange="OnChange"
+                   accept="@Accept"
+                   class="sr-only" />
+    </label>
+
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <p class="mt-1.5 text-xs text-danger-600" role="alert">@Error</p>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<InputFileChangeEventArgs> OnChange { get; set; }
+    [Parameter] public string? FileName { get; set; }
+    [Parameter] public string Help { get; set; } = "PDF, máximo 4 MB.";
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public string Accept { get; set; } = ".pdf,application/pdf";
+    [Parameter] public string Id { get; set; } = $"ui-file-{Guid.NewGuid():N}";
+}

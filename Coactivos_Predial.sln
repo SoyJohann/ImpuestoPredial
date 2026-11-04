@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34511.84
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Coactivos_Predial", "Coactivos_Predial.csproj", "{22DF2379-6E63-425B-9A3A-691407C0F976}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{22DF2379-6E63-425B-9A3A-691407C0F976}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22DF2379-6E63-425B-9A3A-691407C0F976}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22DF2379-6E63-425B-9A3A-691407C0F976}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{22DF2379-6E63-425B-9A3A-691407C0F976}.Release|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8BBD77FB-E496-4A45-A0E2-055E8DC4A428}
+	EndGlobalSection
+EndGlobal

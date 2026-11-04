@@ -1,0 +1,131 @@
+﻿@using System.Linq
+@using Coactivos_Predial.Shared.Models
+@using Coactivos_Predial.Shared.Services
+@inject BusquedaService busquedaService
+@inject IPrediosService comparendoService
+
+<div>
+    <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @onsubmit="ComparendoByCedula" @onsubmit:preventDefault>
+        <div class="flex-1">
+            <UiField Label="Documento" For="busqueda-documento">
+                <UiInput Id="busqueda-documento"
+                         @bind-Value="pcedula"
+                         Mono="true"
+                         Placeholder="Cédula o NIT"
+                         Autocomplete="off" />
+            </UiField>
+        </div>
+        <UiButton ButtonType="submit" Variant="primary">
+            <UiIcon Name="search" />
+            Buscar
+        </UiButton>
+    </form>
+
+    <div class="mt-4">
+        <UiTable Bordered="true">
+            <Header>
+                <tr>
+                    <th>Código predial</th>
+                    <th>Nombre</th>
+                    <th>Dirección</th>
+                    <th class="text-right">Avalúo</th>
+                </tr>
+            </Header>
+            <ChildContent>
+                @if (comparendosinfo is not null && comparendosinfo.Any())
+                {
+                    @foreach (var item in GetPaginaActual())
+                    {
+                        <tr class="@($"cursor-pointer {(selectedComparendo?.codigo == item.codigo ? "bg-accent-50" : string.Empty)}")"
+                            @onclick="() => SeleccionarFila(item)">
+                            <td class="font-numeric">@item.codigo</td>
+                            <td>@item.Nombre</td>
+                            <td>@item.dir</td>
+                            <td class="num">@item.avaluo.ToString("C")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4" class="py-8 text-center text-ink-500">
+                            No hay resultados. Ingrese un documento y presione Buscar.
+                        </td>
+                    </tr>
+                }
+            </ChildContent>
+        </UiTable>
+    </div>
+
+    <UiPager Page="paginaActual" PageSize="5" TotalItems="comparendosinfo.Count()" OnPageChanged="CambiarPagina" />
+    <div class="mt-4 flex flex-wrap justify-end gap-2">
+        <UiButton Variant="secondary" OnClick="Cerrar">Cancelar</UiButton>
+        <UiButton Variant="primary" OnClick="EnviarDatos" Disabled="@(selectedComparendo == null)">
+            <UiIcon Name="check" />
+            Seleccionar
+        </UiButton>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnSeleccionado { get; set; }
+    [Parameter] public EventCallback OnCerrar { get; set; }
+
+    private IEnumerable<ComparendoInfo> comparendosinfo = Enumerable.Empty<ComparendoInfo>();
+    private ComparendoInfo? selectedComparendo;
+    private string? pcedula;
+    private int paginaActual = 1;
+
+    protected override void OnInitialized()
+    {
+        pcedula = busquedaService.ObtenerUltimoComparendoCapturado();
+    }
+
+    private IEnumerable<ComparendoInfo> GetPaginaActual()
+    {
+        if (comparendosinfo is null || !comparendosinfo.Any()) return Enumerable.Empty<ComparendoInfo>();
+        int skip = (paginaActual - 1) * 5;
+        return comparendosinfo.Skip(skip).Take(5);
+    }
+
+    private async Task ComparendoByCedula()
+    {
+        if (!string.IsNullOrWhiteSpace(pcedula))
+        {
+            comparendosinfo = await comparendoService.GetInfoComparendo(pcedula.Trim());
+            paginaActual = 1;
+        }
+    }
+
+    private async Task CambiarPagina(int nuevaPagina)
+    {
+        paginaActual = nuevaPagina;
+    }
+
+    private async Task EnviarDatos()
+    {
+        if (selectedComparendo is null)
+        {
+            return;
+        }
+        string comparendoCodigo = selectedComparendo.codigo;
+        await busquedaService.ComparendoCapturado(comparendoCodigo);
+        if (OnSeleccionado.HasDelegate)
+        {
+            await OnSeleccionado.InvokeAsync(comparendoCodigo);
+        }
+    }
+
+    private async Task Cerrar()
+    {
+        if (OnCerrar.HasDelegate)
+        {
+            await OnCerrar.InvokeAsync();
+        }
+    }
+
+    private void SeleccionarFila(ComparendoInfo item)
+    {
+        selectedComparendo = item;
+    }
+}

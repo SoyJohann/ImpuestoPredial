@@ -1,0 +1,90 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+@if (Open)
+{
+    <div class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/45 p-4 pt-[8vh]"
+         @onclick="Cerrar"
+         role="presentation">
+        <div @ref="_dialog"
+             class="@($"w-full rounded-panel border border-line bg-surface shadow-menu {SizeCss} {Class}")"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="@_titleId"
+             tabindex="-1"
+             @onclick:stopPropagation="true"
+             @onkeydown="HandleKeyDown">
+            <header class="flex items-start justify-between gap-4 border-b border-line px-4 py-3">
+                <div class="min-w-0">
+                    <h2 id="@_titleId" class="text-[15px] font-semibold text-ink-900">@Title</h2>
+                    @if (!string.IsNullOrWhiteSpace(Subtitle))
+                    {
+                        <p class="mt-0.5 text-xs text-ink-500">@Subtitle</p>
+                    }
+                </div>
+                <button type="button"
+                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-ui text-ink-500 transition-colors duration-150 hover:bg-paper hover:text-ink-900"
+                        aria-label="Cerrar"
+                        @onclick="Cerrar">
+                    <UiIcon Name="x" Size="18" />
+                </button>
+            </header>
+
+            <div class="p-4">
+                @ChildContent
+            </div>
+
+            @if (Footer is not null)
+            {
+                <footer class="flex flex-wrap justify-end gap-2 border-t border-line px-4 py-3">
+                    @Footer
+                </footer>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public string Size { get; set; } = "md";
+    [Parameter] public string? Class { get; set; }
+
+    private ElementReference _dialog;
+    private readonly string _titleId = $"ui-dialog-title-{Guid.NewGuid():N}";
+    private bool _wasOpen;
+
+    private string SizeCss => Size switch
+    {
+        "sm" => "max-w-sm",
+        "lg" => "max-w-2xl",
+        _ => "max-w-lg"
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Open && !_wasOpen)
+        {
+            await Task.Yield();
+            await _dialog.FocusAsync();
+        }
+
+        _wasOpen = Open;
+    }
+
+    private async Task Cerrar()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+}

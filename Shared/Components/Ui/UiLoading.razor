@@ -1,0 +1,10 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+<div class="flex items-center gap-2 py-4 text-sm text-ink-500" role="status" aria-live="polite">
+    <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink-500/30 border-t-ink-500" aria-hidden="true"></span>
+    <span>@Text</span>
+</div>
+
+@code {
+    [Parameter] public string Text { get; set; } = "Cargando…";
+}

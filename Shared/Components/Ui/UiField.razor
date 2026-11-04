@@ -1,0 +1,35 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+<div class="@($"space-y-1.5 {Class}")">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label for="@For" class="block text-xs font-medium text-ink-500">
+            @Label
+            @if (Required)
+            {
+                <span class="text-danger-600" aria-hidden="true">*</span>
+            }
+        </label>
+    }
+
+    @ChildContent
+
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <p class="text-xs text-danger-600" role="alert">@Error</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(Help))
+    {
+        <p class="text-xs text-ink-500">@Help</p>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? For { get; set; }
+    [Parameter] public string? Help { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

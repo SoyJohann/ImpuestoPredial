@@ -1,0 +1,26 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+<div class="flex flex-col items-center justify-center px-4 py-8 text-center">
+    <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-ui border border-line bg-paper text-ink-500">
+        <UiIcon Name="@Icon" Size="20" />
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <p class="text-sm font-medium text-ink-900">@Title</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <p class="mt-1 max-w-sm text-sm text-ink-500">@Message</p>
+    }
+    @if (Action is not null)
+    {
+        <div class="mt-4">@Action</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "file-text";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public RenderFragment? Action { get; set; }
+}

@@ -1,0 +1,256 @@
+/*
+ * Hoja de entrada de Tailwind CSS v4.
+ * Se compila con tools/tailwindcss hacia wwwroot/css/app.css.
+ * El preflight se mantiene activo según DESIGN.md. Las pantallas que aún
+ * usan Bootstrap se migrarán una por una.
+ */
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source "../Pages/PConsulta/**/*.razor";
+@source "../Pages/PLogin/LogIn.cshtml";
+@source "../Pages/_Host.cshtml";
+@source "../Shared/Components/Ui/**/*.razor";
+@source "../Shared/Components/Busqueda.razor";
+@source "../MainLayout.razor";
+@source "../App.razor";
+/* Añada aquí cada página a medida que se migre a Tailwind. */
+
+/* Tipografía autoalojada: los servidores municipales pueden no tener internet. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-paper: #f7f5f0;
+  --color-surface: #ffffff;
+  --color-line: #e2ded5;
+  --color-ink-900: #1c2024;
+  --color-ink-700: #3d434a;
+  --color-ink-500: #6b7178;
+  --color-accent-700: #0f5c4d;
+  --color-accent-800: #0b463a;
+  --color-accent-50: #e8f1ee;
+  --color-warn-600: #b45309;
+  --color-danger-600: #b42318;
+  --color-ok-600: #2f7d4f;
+
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", monospace;
+
+  --radius-ui: 4px;
+  --radius-panel: 6px;
+
+  --shadow-menu: 0 4px 16px rgb(0 0 0 / 0.08);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-paper);
+    color: var(--color-ink-900);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-700);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-50);
+    color: var(--color-ink-900);
+  }
+}
+
+@layer components {
+  /* Números, códigos y fechas alineados en columna. */
+  .font-numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ui-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  .ui-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--color-paper);
+    border-bottom: 1px solid var(--color-line);
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-ink-500);
+    white-space: nowrap;
+  }
+
+  .ui-table tbody tr {
+    border-bottom: 1px solid var(--color-line);
+    transition: background-color 150ms ease;
+  }
+
+  .ui-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .ui-table tbody tr:hover {
+    background-color: var(--color-accent-50);
+  }
+
+  .ui-table tbody td {
+    height: 40px;
+    padding: 8px 12px;
+    color: var(--color-ink-700);
+    vertical-align: middle;
+  }
+
+  .ui-table .num {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ui-table .actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+}
+
+/* Enlaces del menú. Fuera de @layer para ganar a Bootstrap. */
+.ui-nav-link,
+.ui-nav-link:visited,
+.ui-nav-link:hover,
+.ui-nav-link:focus,
+.ui-nav-link:active {
+  color: rgb(255 255 255 / 0.7);
+  text-decoration: none;
+  -webkit-text-decoration: none;
+}
+
+.ui-nav-link:hover {
+  color: #fff;
+}
+
+.ui-nav-link:hover svg {
+  color: #fff;
+}
+
+.ui-nav-active svg {
+  color: #fff;
+}
+
+/* Elemento activo del menú. */
+.ui-nav-active,
+.ui-nav-active:visited,
+.ui-nav-active:hover,
+.ui-nav-active:focus,
+.ui-nav-active:active {
+  color: #fff;
+}
+
+.ui-nav-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background-color: var(--color-accent-700);
+}
+
+/* Foco discreto en botones: 1px, sin el anillo grueso del navegador. */
+.ui-btn:focus-visible {
+  outline: 1px solid var(--color-accent-700);
+  outline-offset: 2px;
+}
+
+/* Enlaces con apariencia de botón: Bootstrap no debe pintarlos como enlaces. */
+.ui-btn {
+  text-decoration: none;
+}
+
+.ui-btn.text-white {
+  color: #fff;
+}
+
+.ui-btn.text-ink-900 {
+  color: var(--color-ink-900);
+}
+
+/* Barra lateral: desplazamiento discreto y sin saltos de ancho. */
+.ui-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+}
+
+.ui-sidebar-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ui-sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgb(255 255 255 / 0.18);
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

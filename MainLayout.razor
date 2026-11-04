@@ -1,0 +1,203 @@
+@inherits LayoutComponentBase
+@using Coactivos_Predial.Models;
+@using Coactivos_Predial.Shared.Models;
+@using Coactivos_Predial.Shared.Services.SDatabase;
+@inject NavigationManager Navigation
+@inject ITenantProvider Tenant
+
+<PageTitle>Predial · @municipio</PageTitle>
+
+<AuthorizeView>
+    <Authorized Context="auth">
+        <div class="min-h-screen bg-paper">
+            <!-- Barra móvil -->
+            <header class="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-paper px-4 lg:hidden">
+                <button type="button"
+                        class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-ui text-ink-700 transition-colors duration-150 hover:bg-accent-50"
+                        aria-label="Abrir menú"
+                        @onclick="ToggleSidebar">
+                    <UiIcon Name="menu" Size="20" />
+                </button>
+                <span class="text-sm font-semibold text-ink-900">Predial</span>
+                <span class="ml-auto truncate text-xs text-ink-500">@municipio</span>
+            </header>
+
+            <!-- Fondo del menú móvil -->
+            @if (sidebarOpen)
+            {
+                <div class="fixed inset-0 z-40 bg-ink-900/45 lg:hidden" @onclick="CloseSidebar" aria-hidden="true"></div>
+            }
+
+            <!-- Barra lateral -->
+            <aside class="@($"fixed inset-y-0 left-0 z-50 flex w-[232px] flex-col bg-ink-900 text-white transition-transform duration-150 lg:translate-x-0 {(sidebarOpen ? "translate-x-0" : "-translate-x-full")}")">
+                <div class="flex items-center gap-3 border-b border-white/10 px-4 py-4">
+                    <img src="/logos/Logo_Cim1.jpg"
+                         alt="Escudo del municipio"
+                         class="h-10 w-10 shrink-0 rounded-ui bg-white object-contain p-0.5" />
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-white">Predial</p>
+                        <p class="truncate text-xs text-white/50">Gestión documental</p>
+                    </div>
+                    <button type="button"
+                            class="ml-auto flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-ui text-white/60 transition-colors duration-150 hover:bg-white/10 hover:text-white lg:hidden"
+                            aria-label="Cerrar menú"
+                            @onclick="CloseSidebar">
+                        <UiIcon Name="x" Size="18" />
+                    </button>
+                </div>
+
+                <nav class="ui-sidebar-scroll flex-1 overflow-y-auto px-3 py-4" aria-label="Menú principal">
+                    <ul class="space-y-1">
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Consultapage" @onclick="CloseSidebar">
+                                <UiIcon Name="search" Size="16" Class="text-white/40" />
+                                <span>Consulta de predio</span>
+                            </NavLink>
+                        </li>
+                    </ul>
+
+                    <p class="px-3 pb-1 pt-4 text-xs font-medium uppercase tracking-wide text-white/35">Básicos</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Infractores" @onclick="CloseSidebar">
+                                <UiIcon Name="users" Size="16" Class="text-white/40" />
+                                <span>Propietarios</span>
+                            </NavLink>
+                        </li>
+                    </ul>
+
+                    <p class="px-3 pb-1 pt-4 text-xs font-medium uppercase tracking-wide text-white/35">Procesos</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/ImportacionPage" @onclick="CloseSidebar">
+                                <UiIcon Name="upload" Size="16" Class="text-white/40" />
+                                <span>Importación</span>
+                            </NavLink>
+                        </li>
+                    </ul>
+
+                    <p class="px-3 pb-1 pt-4 text-xs font-medium uppercase tracking-wide text-white/35">Coactivo</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Persuasivos" @onclick="CloseSidebar">
+                                <UiIcon Name="clipboard-list" Size="16" Class="text-white/40" />
+                                <span>Persuasivos</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Coactivospage" @onclick="CloseSidebar">
+                                <UiIcon Name="hammer" Size="16" Class="text-white/40" />
+                                <span>Coactivo</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Rep_coactivopage" @onclick="CloseSidebar">
+                                <UiIcon Name="file-text" Size="16" Class="text-white/40" />
+                                <span>Informes</span>
+                            </NavLink>
+                        </li>
+                    </ul>
+
+                    <p class="px-3 pb-1 pt-4 text-xs font-medium uppercase tracking-wide text-white/35">Reportes</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/ReporteDiario" @onclick="CloseSidebar">
+                                <UiIcon Name="bar-chart" Size="16" Class="text-white/40" />
+                                <span>Estadísticas</span>
+                            </NavLink>
+                        </li>
+                    </ul>
+
+                    <p class="px-3 pb-1 pt-4 text-xs font-medium uppercase tracking-wide text-white/35">Configuración</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Parametrospage" @onclick="CloseSidebar">
+                                <UiIcon Name="sliders" Size="16" Class="text-white/40" />
+                                <span>Parámetros</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Usuariospage" @onclick="CloseSidebar">
+                                <UiIcon Name="user" Size="16" Class="text-white/40" />
+                                <span>Usuarios</span>
+                            </NavLink>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="border-t border-white/10 px-4 py-4">
+                    <p class="truncate text-xs font-medium text-white">@municipio</p>
+                    <div class="mt-1 flex items-center justify-between gap-2">
+                        <p class="truncate text-xs text-white/55">@auth.User.Identity?.Name</p>
+                        <a href="/PLogOut/CerrarSesion"
+                           class="ui-nav-link flex h-7 w-7 shrink-0 items-center justify-center rounded-ui text-white/55 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+                           title="Cerrar sesión"
+                           aria-label="Cerrar sesión">
+                            <UiIcon Name="log-out" Size="16" />
+                        </a>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Contenido -->
+            <div class="pt-14 lg:pl-[232px] lg:pt-0">
+                <main class="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6 lg:px-8">
+                    @if (_ready)
+                    {
+                        @Body
+                    }
+                </main>
+            </div>
+        </div>
+    </Authorized>
+
+    <NotAuthorized>
+        <div class="flex min-h-screen items-center justify-center bg-paper px-4 py-10">
+            <section class="w-full max-w-[400px]">
+                <div class="mb-6 flex items-center gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-ui bg-ink-900 text-white">
+                        <UiIcon Name="user" Size="20" />
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[15px] font-semibold leading-5 text-ink-900">Coactivos Predial</p>
+                        <p class="truncate text-xs text-ink-500">Gestión documental del impuesto predial</p>
+                    </div>
+                </div>
+
+                <div class="rounded-panel border border-line bg-surface p-5">
+                    <h1 class="text-[22px] font-semibold leading-7 text-ink-900">Sesión no iniciada</h1>
+                    <p class="mt-1 text-sm text-ink-500">
+                        Ingrese con su usuario para consultar los predios y sus documentos.
+                    </p>
+                    <a href="/"
+                       class="ui-btn mt-5 inline-flex h-8 w-full items-center justify-center gap-2 rounded-ui border border-accent-700 bg-accent-700 px-4 text-sm font-medium text-white transition-colors duration-150 hover:border-accent-800 hover:bg-accent-800">
+                        <UiIcon Name="user" Size="16" />
+                        Iniciar sesión
+                    </a>
+                </div>
+
+                <p class="mt-4 text-center text-xs text-ink-500">
+                    Acceso restringido a funcionarios autorizados.
+                </p>
+            </section>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private const string NavItemClass = "ui-nav-link relative flex items-center gap-2.5 rounded-ui px-3 py-2 text-[13px] text-white/70 transition-colors duration-150 hover:bg-white/5 hover:text-white";
+    private const string NavActiveClass = "ui-nav-active bg-white/5 text-white";
+
+    private string municipio => Tenant.Municipio ?? "Municipio";
+    private bool sidebarOpen;
+    private bool _ready;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Tenant.InitializeAsync();
+        _ready = true;
+    }
+
+    private void ToggleSidebar() => sidebarOpen = !sidebarOpen;
+    private void CloseSidebar() => sidebarOpen = false;
+}

@@ -1,0 +1,26 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+<span class="@Css">@ChildContent</span>
+
+@code {
+    [Parameter] public string Variant { get; set; } = "neutral";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string Css
+    {
+        get
+        {
+            var variantCss = Variant switch
+            {
+                "accent" => "border-accent-700/20 bg-accent-50 text-accent-800",
+                "ok" => "border-ok-600/20 bg-ok-600/10 text-ok-600",
+                "warn" => "border-warn-600/20 bg-warn-600/10 text-warn-600",
+                "danger" => "border-danger-600/20 bg-danger-600/10 text-danger-600",
+                _ => "border-line bg-paper text-ink-700"
+            };
+
+            return $"inline-flex items-center gap-1 rounded-ui border px-2 py-0.5 text-xs font-medium {variantCss} {Class}";
+        }
+    }
+}

@@ -1,0 +1,21 @@
+<Router AppAssembly="@typeof(Routes).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized>
+                <div class="p-4">
+                    <p class="text-sm text-ink-700">No tiene permisos para acceder a esta página.</p>
+                    <a href="/" class="ui-btn mt-3 inline-flex h-8 items-center justify-center rounded-ui border border-line bg-surface px-3.5 text-sm font-medium text-ink-900 transition-colors duration-150 hover:bg-paper">
+                        Volver al inicio
+                    </a>
+                </div>
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Página no encontrada</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p role="alert" class="text-sm text-ink-700">La dirección solicitada no existe.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

@@ -1,0 +1,93 @@
+﻿@page "/"
+@model Coactivos_Predial.Pages.PLogin.LogInModel;
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>Ingreso · Coactivos Predial</title>
+    <link rel="stylesheet" href="~/css/app.css" />
+</head>
+
+<body class="bg-paper text-ink-900">
+    <main class="flex min-h-screen items-center justify-center px-4 py-10">
+        <div class="w-full max-w-[400px]">
+            <div class="mb-6 flex items-center gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-ui bg-ink-900 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="20"
+                         height="20"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="1.5"
+                         stroke-linecap="round"
+                         stroke-linejoin="round"
+                         aria-hidden="true">
+                        <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+                        <path d="M4 7h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z" />
+                        <path d="M9 11h6" />
+                    </svg>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[15px] font-semibold leading-5 text-ink-900">Coactivos Predial</p>
+                    <p class="truncate text-xs text-ink-500">Gestión documental del impuesto predial</p>
+                </div>
+            </div>
+
+            <section class="rounded-panel border border-line bg-surface p-5">
+                <h1 class="text-[22px] font-semibold leading-7 text-ink-900">Ingreso al sistema</h1>
+                <p class="mt-1 text-sm text-ink-500">Use las credenciales asignadas por el municipio.</p>
+
+                @if (TempData["ErrorMessage"] is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <div class="mt-4 rounded-ui border border-danger-600/20 bg-danger-600/5 px-3 py-2 text-sm text-danger-600" role="alert">
+                        @errorMessage
+                    </div>
+                }
+
+                <form method="post" class="mt-5 space-y-4">
+                    <div class="space-y-1.5">
+                        <label for="UserName" class="block text-xs font-medium text-ink-500">Usuario</label>
+                        <input id="UserName"
+                               name="UserName"
+                               type="text"
+                               value="@Model.UserName"
+                               class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 placeholder:text-ink-500/70 transition-colors duration-150 hover:border-ink-500/40 focus:border-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-700/20"
+                               placeholder="Digite su usuario"
+                               maxlength="10"
+                               autocomplete="username"
+                               autofocus
+                               required />
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="pass" class="block text-xs font-medium text-ink-500">Clave de acceso</label>
+                        <input id="pass"
+                               name="pass"
+                               type="password"
+                               class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 placeholder:text-ink-500/70 transition-colors duration-150 hover:border-ink-500/40 focus:border-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-700/20"
+                               placeholder="Digite su clave"
+                               maxlength="8"
+                               autocomplete="current-password"
+                               required />
+                    </div>
+
+                    <button type="submit"
+                            class="ui-btn inline-flex h-8 w-full items-center justify-center rounded-ui border border-accent-700 bg-accent-700 px-4 text-sm font-medium text-white transition-colors duration-150 hover:border-accent-800 hover:bg-accent-800">
+                        Ingresar
+                    </button>
+                </form>
+            </section>
+
+            <p class="mt-4 text-center text-xs text-ink-500">
+                Acceso restringido a funcionarios autorizados.
+            </p>
+        </div>
+    </main>
+</body>
+
+</html>

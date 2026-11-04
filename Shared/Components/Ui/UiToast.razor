@@ -1,0 +1,45 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+@if (Visible)
+{
+    <div class="fixed bottom-4 right-4 z-50 max-w-sm rounded-panel border border-line bg-surface px-4 py-3 shadow-menu"
+         role="status"
+         aria-live="polite">
+        <div class="flex items-start gap-3">
+            <span class="@IconCss">
+                <UiIcon Name="@IconName" Size="16" />
+            </span>
+            <p class="flex-1 text-sm text-ink-900">@Message</p>
+            @if (OnClose.HasDelegate)
+            {
+                <button type="button"
+                        class="cursor-pointer text-ink-500 transition-colors duration-150 hover:text-ink-900"
+                        aria-label="Cerrar"
+                        @onclick="OnClose">
+                    <UiIcon Name="x" Size="14" />
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public string Variant { get; set; } = "ok";
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string IconName => Variant switch
+    {
+        "danger" => "x-circle",
+        "warn" => "alert",
+        _ => "check-circle"
+    };
+
+    private string IconCss => Variant switch
+    {
+        "danger" => "text-danger-600",
+        "warn" => "text-warn-600",
+        _ => "text-ok-600"
+    };
+}

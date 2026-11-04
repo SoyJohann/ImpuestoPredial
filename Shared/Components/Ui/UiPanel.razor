@@ -1,0 +1,38 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+<section class="@($"overflow-hidden rounded-panel border border-line bg-surface {Class}")">
+    @if (HeaderContent is not null || !string.IsNullOrWhiteSpace(Title) || Actions is not null)
+    {
+        <header class="flex min-h-11 items-center justify-between gap-4 border-b border-line px-4 py-1.5">
+            <div class="flex min-w-0 items-baseline gap-2">
+                @if (!string.IsNullOrWhiteSpace(Title))
+                {
+                    <h2 class="text-[15px] font-semibold leading-5 text-ink-900">@Title</h2>
+                }
+                @if (!string.IsNullOrWhiteSpace(Subtitle))
+                {
+                    <p class="truncate text-xs text-ink-500">@Subtitle</p>
+                }
+                @HeaderContent
+            </div>
+            @if (Actions is not null)
+            {
+                <div class="flex shrink-0 items-center gap-1.5">@Actions</div>
+            }
+        </header>
+    }
+
+    <div class="@BodyClass">
+        @ChildContent
+    </div>
+</section>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    [Parameter] public RenderFragment? Actions { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string BodyClass { get; set; } = "p-4";
+    [Parameter] public string? Class { get; set; }
+}

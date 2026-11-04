@@ -1,0 +1,264 @@
+﻿@page "/Infractores"
+
+@using Coactivos_Predial.Models;
+@using Coactivos_Predial.Shared.Services.SPropietarios;
+@inject NavigationManager NavigationManager
+@inject IpropietariosService InfractoresService;
+@inject IJSRuntime js
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header p-0" style="background-color: #112366; height: 41px;">
+                    <div class="row ps-1 align-items-center h-100">
+                        <div class="col-6 col-md-7">
+                            <h5 class="card-title ms-3 mb-0 text-white">Propietarios</h5>
+                        </div>
+                        <div class="col-4 col-md-4">
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="buscarnit" name="searchString" class="form-control" @bind="buscarnit" placeholder="Buscar por cédula" />
+                                <button type="button" @onclick="findbycedula" class="btn btn-light btn-sm border-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-2 col-md-1 text-end pe-3">
+                            <button type="button" class="btn btn-primary btn-sm rounded-1" @onclick="@(args => MostrarModal(false))">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body mt-1">
+                    @if (isLoading)
+                    {
+                        <div class="text-center my-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover align-middle">
+                                <thead class="table-primary">
+                                    <tr>
+                                        <th>Documento</th>
+                                        <th>Nombre</th>
+                                        <th>Teléfono</th>
+                                        <th>Email</th>
+                                        <th class="text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (infractores != null && infractores.Any())
+                                    {
+                                        @foreach (var infractor in infractores)
+                                        {
+                                            <tr>
+                                                <td>@infractor.documento</td>
+                                                <td>@infractor.nombre</td>
+                                                <td>@infractor.tel</td>
+                                                <td>@infractor.correo</td>
+                                                <td class="text-center">
+                                                    <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-primary btn-sm" @onclick="() => EditarInfractor(infractor)">
+                                                        Editar
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="5" class="text-center">No hay datos disponibles.</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDITAR/AGREGAR PROPIETARIO -->
+<div class="modal fade show" tabindex="-1" style="display: @(mostrarModal ? "block" : "none"); background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg" style="border-radius: 30px; box-shadow: 0px 8px 16px rgba(12, 12, 12, 0.8);">
+        <div class="modal-content" style="border-radius:30px;">
+            <div class="modal-header text-white" style="background-color: #3679D3; border-radius: 30px 30px 0 0; overflow: hidden; height:40px;">
+                <h5 class="modal-title fs-6">Editar Propietarios</h5>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CerrarModal"></button>
+            </div>
+
+            <div class="modal-body bg-light bg-gradient">
+                @if (infractoresobj != null)
+                {
+                    <div class="row mb-2">
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label style="font-size:12px">Tipo Identificación</label>
+                                <select id="cars" class="form-control col-auto" style="font-weight: bold; font-size:12px" @bind="infractoresobj.tipo_id">
+                                    <option value="1">Cedula Ciudadania</option>
+                                    <option value="2">Tarjeta Identidad</option>
+                                    <option value="3">Cedula Extranjeria</option>
+                                    <option value="4">Nit</option>
+                                    <option value="6">Pasaporte</option>
+                                    <option value="7">Carnet Diplomatico</option>
+                                    <option value="9">Cedula Venezolana</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-8">
+                            <div class="form-group">
+                                <label style="font-size:12px">Cédula Propietario</label>
+                                <input type="text" class="form-control" maxlength="13" style="font-weight: bold;" @bind="infractoresobj.documento">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label style="font-size:12px">Nombre Propietario</label>
+                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="30" @bind="infractoresobj.nombre">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label style="font-size:12px">Correo:</label>
+                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="40" @bind="infractoresobj.correo">
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label style="font-size:12px">Teléfono:</label>
+                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="15" @bind="infractoresobj.tel">
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer border-0">
+                <div class="row w-100">
+                    <div class="col-6 text-start">
+                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-secondary" @onclick="CerrarModal">Cerrar</button>
+                    </div>
+                    <div class="col-6 text-end">
+                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-primary bg-success text-white" @onclick="() => esModoEditar ? Actualizar(infractoresobj) : Agregar()">
+                            @if (esModoEditar)
+                            {
+                                <span>Actualizar</span>
+                            }
+                            else
+                            {
+                                <span>Agregar</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool mostrarModal = false;
+    private string buscarnit;
+    private Propietarios infractoresobj = new Propietarios();
+    private List<Propietarios> infractores { get; set; }
+    private bool esModoEditar;
+    IQueryable<Propietarios> data;
+    bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ShowLoading();
+        const int cantidadInicial = 8;
+        var todosLosInfractores = await InfractoresService.GetAll();
+
+        if (todosLosInfractores != null && todosLosInfractores.Any())
+        {
+            infractores = todosLosInfractores.Take(cantidadInicial).ToList();
+            data = infractores.AsQueryable();
+        }
+    }
+
+    async Task ShowLoading()
+    {
+        isLoading = true;
+        await Task.Yield();
+        isLoading = false;
+    }
+
+    private async Task findbycedula()
+    {
+        var infractoresList = await InfractoresService.GetInfractoresByCedula(buscarnit);
+        if (infractoresList != null && infractoresList.Count > 0)
+        {
+            infractores = infractoresList;
+        }
+        else
+        {
+            infractores = new List<Propietarios>();
+        }
+    }
+
+    private async Task Agregar()
+    {
+        var result = await InfractoresService.Add(infractoresobj);
+        mostrarModal = false;
+    }
+
+    void EditarInfractor(Propietarios infractor)
+    {
+        infractoresobj = infractor;
+        esModoEditar = true;
+        mostrarModal = true;
+    }
+
+    private async Task Actualizar(Propietarios infractor)
+    {
+        var count = await InfractoresService.EditInfractores(infractor);
+
+        if (count > 0)
+        {
+            mostrarModal = true;
+            StateHasChanged();
+            mostrarModal = false;
+        }
+        else
+        {
+            Console.WriteLine("Error al actualizar el infractor.");
+        }
+    }
+
+    public void MostrarModal(bool nkey)
+    {
+        mostrarModal = true;
+        esModoEditar = nkey;
+
+        if (esModoEditar && infractoresobj != null)
+        {
+        }
+        else
+        {
+            infractoresobj = new Propietarios();
+        }
+    }
+
+    private void CerrarModal()
+    {
+        mostrarModal = false;
+    }
+}

@@ -1,0 +1,521 @@
+﻿@page "/Usuariospage"
+
+@using Coactivos_Predial.Models;
+@using Coactivos_Predial.Shared.Services.SUser;
+@inject NavigationManager NavigationManager
+@inject IUserService UsuariosServices;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Coactivos_Predial.Shared.Models
+@using Npgsql
+
+<AuthorizeView>
+    <Authorized>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header p-0" style="background-color: #112366; height: 41px;">
+                            <div class="row ps-1 align-items-center h-100">
+                                <div class="col-6 col-md-7">
+                                    <h5 class="card-title ms-3 mb-0 text-white">Usuarios Del Sistema</h5>
+                                </div>
+                                <div class="col-4 col-md-3">
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" id="buscarnit" name="searchString" class="form-control" @bind="buscarnit" placeholder="Buscar" />
+                                        <button type="button" @onclick="findbyplaca" class="btn btn-light btn-sm border-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                @if (userHasAccess)
+                                {
+                                    <div class="col-2 col-md-2 text-end pe-3">
+                                        <button type="button" class="btn btn-primary btn-sm rounded-1" @onclick="@(args => MostrarModal(false))">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                                                <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="card-body mt-1">
+                            @if (isLoading)
+                            {
+                                <div class="text-center my-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover align-middle">
+                                        <thead class="table-primary">
+                                            <tr>
+                                                <th>Login</th>
+                                                <th>Nombre Usuario</th>
+                                                <th>Dirección</th>
+                                                <th>Teléfono</th>
+                                                <th>Usuario Creación</th>
+                                                <th class="text-center">Habilitado</th>
+                                                <th class="text-center">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if (user_obj != null && user_obj.Any())
+                                            {
+                                                @foreach (var usuario in user_obj)
+                                                {
+                                                    <tr>
+                                                        <td>@usuario.login</td>
+                                                        <td>@usuario.nombre</td>
+                                                        <td>@usuario.dir</td>
+                                                        <td>@usuario.tel</td>
+                                                        <td>@usuario.usuario_creo</td>
+                                                        <td class="text-center">
+                                                            <input type="checkbox" class="form-check-input" checked="@usuario.habilitado" disabled />
+                                                        </td>
+                                                        <td class="text-center">
+                                                            @if (userHasAccess)
+                                                            {
+                                                                <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-primary btn-sm" @onclick="() => EditarUsuarios(usuario)">
+                                                                    Editar
+                                                                </button>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <tr>
+                                                    <td colspan="7" class="text-center">No hay datos disponibles.</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+<!-- MODAL PRINCIPAL: AGREGAR / EDITAR -->
+<div class="modal fade show" tabindex="-1" style="display: @(mostrarModal ? "block" : "none"); background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg" style="border-radius: 30px; box-shadow: 0px 8px 16px rgba(12, 12, 12, 0.8);">
+        <div class="modal-content" style="border-radius:30px;">
+            <div class="modal-header text-white" style="background-color: #3679D3; border-radius: 30px 30px 0 0; overflow: hidden; height:40px;">
+                <h5 class="modal-title fs-6">Editar Usuarios</h5>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CerrarModal"></button>
+            </div>
+            <div class="modal-body bg-light bg-gradient">
+                @if (userobj != null)
+                {
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label style="font-size:12px">Login</label>
+                                    <input type="text" class="form-control" style="font-size:12px" maxlength="10" @bind="userobj.login">
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label style="font-size:12px">Nombre</label>
+                                    <input type="text" class="form-control" style="font-size:12px" maxlength="40" @bind="userobj.nombre">
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label style="font-size:12px">Direccion</label>
+                                    <input type="text" maxlength="40" style="font-size:12px" class="form-control" @bind="userobj.dir">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label style="font-size:12px">Telefono</label>
+                                    <input type="text" maxlength="15" style="font-size:12px" class="form-control" @bind="userobj.tel">
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label style="font-size:12px">Correo</label>
+                                    <input type="text" maxlength="40" style="font-size:12px" class="form-control" @bind="userobj.correo">
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label style="font-size:12px">Tipo De Usuario</label>
+                                    <select id="cars" style="font-size:12px;" class="form-control col-auto" @bind="userobj.nivel">
+                                        <option value="1">Standard</option>
+                                        <option value="2">Administrador</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4">
+                                <div class="form-group">
+                                    <label style="font-size:12px">Alcaldia</label>
+                                    <select id="lClaseVehiculo" @onchange="capturar" class="form-control col-auto" style="font-size:12px" @bind-value="userobj.municipio" @bind-value:event="oninput">
+                                        <option value="1">Alcaldia de Cimitarra</option>
+                                        <option value="2">Alcaldia de Puerto Boyaca</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-5 mt-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="userobj.habilitado">
+                                    <label style="font-size:12px" class="form-check-label">Habilitado</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0 mt-2">
+                            <div class="row">
+                                <div class="col-sm-12 col-xs-12 text-end">
+                                    <div class="form-group">
+                                        <button type="button" style="font-size:12px;" class="btn btn-dark pull-right me-2" @onclick="Resetear">Resetear Clave</button>
+                                        <button type="button" style="font-size:12px;" class="btn btn-dark pull-right" @onclick="() => Cambia_key()">Cambiar Contraseña</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <div class="row w-100">
+                    <div class="col-6 text-start">
+                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-secondary" @onclick="CerrarModal">Cerrar</button>
+                    </div>
+                    <div class="col-6 text-end">
+                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn bg-success text-white" @onclick="() => esModoEditar ? Actualizar(userobj) : Agregar()">
+                            @if (esModoEditar)
+                            {
+                                <span>Actualizar</span>
+                            }
+                            else
+                            {
+                                <span>Agregar</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CAMBIAR CLAVE -->
+<div class="modal fade show" tabindex="-1" style="display: @(mostrarClave ? "block" : "none"); background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-lg" style="border-radius: 30px; box-shadow: 0px 8px 16px rgba(12, 12, 12, 0.8);">
+        <div class="modal-content" style="border-radius:30px;">
+            <div class="modal-header text-white" style="background-color: #2C9EA5; border-radius: 30px 30px 0 0; overflow: hidden; height:40px;">
+                <h5 class="modal-title fs-6">Cambiar Clave Usuario</h5>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CerrarModalx"></button>
+            </div>
+            <div class="modal-body bg-light bg-gradient">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label>Contraseña Actual</label>
+                                <input type="password" class="form-control" maxlength="8" @bind="nkey" @onblur="@(async () => { await Valida_key(); })">
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label>Nueva Contraseña</label>
+                                <input type="password" maxlength="8" class="form-control" @bind="nkey1">
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="form-group">
+                                <label>Confirmar Contraseña</label>
+                                <input type="password" maxlength="8" class="form-control" @bind="nkey2">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="row w-100">
+                    <div class="col-6 text-start">
+                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-secondary" @onclick="CerrarModalx">Cerrar</button>
+                    </div>
+                    <div class="col-6 text-end">
+                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn bg-success text-white" @onclick="() => Cambiar_Key()">
+                            <span>Cambiar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool mostrarModal = false;
+    private bool mostrarClave = false;
+    private string buscarnit;
+    private string nkey1;
+    private string nkey2;
+    private string nkey;
+    private Usuarios userobj = new Usuarios();
+    private List<Usuarios> user_obj { get; set; }
+    private bool esModoEditar;
+    IQueryable<Usuarios> data;
+    bool isLoading = false;
+    private int Rmun;
+
+    private bool userHasAccess = false;
+    private string requiredRole = "2";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                userHasAccess = user.Claims.Any(c => c.Type == ClaimTypes.Role && c.Value == requiredRole);
+            }
+            await ShowLoading();
+            const int cantidadInicial = 11;
+
+            user_obj = await GetAll();
+        }
+        catch (PostgresException pgEx)
+        {
+            Console.WriteLine($"Error de PostgreSQL en OnInitializedAsync: {pgEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error en OnInitializedAsync: {ex.Message}");
+            throw;
+        }
+    }
+
+    private async Task<List<Usuarios>> GetAll()
+    {
+        const int cantidadInicial = 11;
+        List<Usuarios> usuarios = new List<Usuarios>();
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                userHasAccess = user.Claims.Any(c => c.Type == ClaimTypes.Role && c.Value == requiredRole);
+
+                if (userHasAccess)
+                {
+                    usuarios = await UsuariosServices.GetAll();
+
+                    if (usuarios != null && usuarios.Any())
+                    {
+                        return usuarios.Take(cantidadInicial).ToList();
+                    }
+                }
+                else
+                {
+                    var userIdClaim = user.FindFirst("UserId")?.Value;
+                    if (userIdClaim != null && int.TryParse(userIdClaim, out int userId))
+                    {
+                        Console.WriteLine($"userId: {userId}");
+                        var usuario = await UsuariosServices.GetUserById(userId);
+                        if (usuario != null)
+                        {
+                            Console.WriteLine($"Usuario encontrado: {usuario.nombre}");
+                            return new List<Usuarios> { usuario };
+                        }
+                        else
+                        {
+                            Console.WriteLine($"No se encontró ningún usuario con ID: {userId}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("No se pudo obtener el ID de usuario del claim.");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("El usuario no está autenticado.");
+            }
+        }
+        catch (PostgresException pgEx)
+        {
+            Console.WriteLine($"Error de PostgreSQL: {pgEx.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            throw;
+        }
+
+        return new List<Usuarios>();
+    }
+
+    private async Task capturar(ChangeEventArgs e)
+    {
+        Rmun = int.Parse((string)e.Value);
+        Console.WriteLine($" Rnum :{Rmun}");
+        if (Rmun == 1)
+        {
+            userobj.mun = "Predial_Cimitarra"; userobj.municipio = 1;
+        }
+        if (Rmun == 2)
+        {
+            userobj.mun = "Predial_Pto_boyaca"; userobj.municipio = 2;
+        }
+    }
+
+    async Task ShowLoading()
+    {
+        isLoading = true;
+        await Task.Yield();
+        isLoading = false;
+    }
+
+    private async Task Valida_key()
+    {
+        if (!string.IsNullOrEmpty(nkey))
+        {
+            var inf = UsuariosServices.ValidatePasswordHash(nkey, userobj.clave);
+            if (inf == false)
+            {
+                // Reemplazado Radzen DialogService por alerta web estándar
+                // Puedes cambiarlo por JS.InvokeVoidAsync("alert", ...) si lo prefieres
+                Console.WriteLine("Clave Incorrecta");
+                return;
+            }
+        }
+    }
+
+    private async Task findbyplaca()
+    {
+        var infraccionesList = await UsuariosServices.GetUserByName(buscarnit);
+        if (infraccionesList != null && infraccionesList.Count > 0)
+        {
+            user_obj = infraccionesList;
+        }
+        else
+        {
+            user_obj = new List<Usuarios>();
+            Console.WriteLine("No se encontraron resultados.");
+        }
+    }
+
+    void EditarUsuarios(Usuarios usuarios)
+    {
+        userobj = usuarios;
+        Rmun = userobj.municipio;
+        esModoEditar = true;
+        mostrarModal = true;
+    }
+
+    void Cambia_key()
+    {
+        if (esModoEditar)
+        { mostrarClave = true; }
+    }
+
+    private async Task Actualizar(Usuarios usuarios)
+    {
+        var count = await UsuariosServices.EditUsuarios(userobj);
+
+        if (count > 0)
+        {
+            mostrarModal = true;
+            StateHasChanged();
+            mostrarModal = false;
+        }
+        else
+        {
+            Console.WriteLine("Error al actualizar el infractor.");
+        }
+    }
+
+    private async Task Agregar()
+    {
+        var result = await UsuariosServices.Add(userobj);
+        mostrarModal = false;
+    }
+
+    private async Task Cambiar_Key()
+    {
+        if (esModoEditar)
+        {
+            if (string.IsNullOrEmpty(nkey))
+            {
+                return;
+            }
+            var inf = UsuariosServices.ValidatePasswordHash(nkey, userobj.clave);
+            if (inf == false)
+            {
+                return;
+            }
+
+            if (nkey1 != nkey2)
+            {
+                return;
+            }
+            var result = await UsuariosServices.Change_key(userobj.id, nkey1);
+            mostrarClave = false;
+        }
+    }
+
+    private async Task Resetear()
+    {
+        if (esModoEditar)
+        {
+            var result = await UsuariosServices.Reset_key(userobj.id);
+            mostrarModal = false;
+        }
+    }
+
+    public void MostrarModal(bool nkey)
+    {
+        mostrarModal = true; esModoEditar = nkey;
+
+        if (esModoEditar && userobj != null)
+        {
+        }
+        else
+        {
+            userobj = new Usuarios();
+            userobj.nivel = 1;
+            userobj.habilitado = true;
+        }
+    }
+
+    private void CerrarModalx()
+    {
+        mostrarClave = false;
+    }
+
+    private void CerrarModal()
+    {
+        mostrarModal = false;
+    }
+}

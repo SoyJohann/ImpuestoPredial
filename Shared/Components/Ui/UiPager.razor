@@ -1,0 +1,40 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+<div class="flex flex-wrap items-center justify-between gap-3">
+    <p class="text-xs text-ink-500">
+        @if (TotalItems == 0)
+        {
+            <span>Sin registros</span>
+        }
+        else
+        {
+            <span>@Desde–@Hasta de @TotalItems</span>
+        }
+    </p>
+
+    <div class="flex items-center gap-1">
+        <UiButton Variant="secondary" Size="sm" Disabled="@(Page <= 1)" OnClick="Anterior" AriaLabel="Página anterior">
+            <UiIcon Name="chevron-right" Size="14" Class="rotate-180" />
+            Anterior
+        </UiButton>
+        <span class="px-2 text-xs text-ink-500">Página @Page de @TotalPages</span>
+        <UiButton Variant="secondary" Size="sm" Disabled="@(Page >= TotalPages)" OnClick="Siguiente" AriaLabel="Página siguiente">
+            Siguiente
+            <UiIcon Name="chevron-right" Size="14" />
+        </UiButton>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Page { get; set; } = 1;
+    [Parameter] public int PageSize { get; set; } = 20;
+    [Parameter] public int TotalItems { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalItems / (double)Math.Max(1, PageSize)));
+    private int Desde => TotalItems == 0 ? 0 : ((Page - 1) * PageSize) + 1;
+    private int Hasta => Math.Min(Page * PageSize, TotalItems);
+
+    private Task Anterior() => Page > 1 ? OnPageChanged.InvokeAsync(Page - 1) : Task.CompletedTask;
+    private Task Siguiente() => Page < TotalPages ? OnPageChanged.InvokeAsync(Page + 1) : Task.CompletedTask;
+}
