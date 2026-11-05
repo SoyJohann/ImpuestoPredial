@@ -2,6 +2,7 @@
 
 @using Coactivos_Predial.Models;
 @using Coactivos_Predial.Shared.Services.SUser;
+@using Coactivos_Predial.Shared.Services.SUser.Responses;
 @inject NavigationManager NavigationManager
 @inject IUserService UsuariosServices;
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -74,13 +75,13 @@
                                                 @foreach (var usuario in user_obj)
                                                 {
                                                     <tr>
-                                                        <td>@usuario.login</td>
-                                                        <td>@usuario.nombre</td>
-                                                        <td>@usuario.dir</td>
-                                                        <td>@usuario.tel</td>
-                                                        <td>@usuario.usuario_creo</td>
+                                                        <td>@usuario.Login</td>
+                                                        <td>@usuario.Nombre</td>
+                                                        <td>@usuario.Direccion</td>
+                                                        <td>@usuario.Telefono</td>
+                                                        <td>@usuario.UsuarioCreoId</td>
                                                         <td class="text-center">
-                                                            <input type="checkbox" class="form-check-input" checked="@usuario.habilitado" disabled />
+                                                            <input type="checkbox" class="form-check-input" checked="@usuario.Habilitado" disabled />
                                                         </td>
                                                         <td class="text-center">
                                                             @if (userHasAccess)
@@ -127,19 +128,19 @@
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label style="font-size:12px">Login</label>
-                                    <input type="text" class="form-control" style="font-size:12px" maxlength="10" @bind="userobj.login">
+                                    <input type="text" class="form-control" style="font-size:12px" maxlength="10" @bind="userobj.Login">
                                 </div>
                             </div>
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label style="font-size:12px">Nombre</label>
-                                    <input type="text" class="form-control" style="font-size:12px" maxlength="40" @bind="userobj.nombre">
+                                    <input type="text" class="form-control" style="font-size:12px" maxlength="40" @bind="userobj.Nombre">
                                 </div>
                             </div>
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label style="font-size:12px">Direccion</label>
-                                    <input type="text" maxlength="40" style="font-size:12px" class="form-control" @bind="userobj.dir">
+                                    <input type="text" maxlength="40" style="font-size:12px" class="form-control" @bind="userobj.Direccion">
                                 </div>
                             </div>
                         </div>
@@ -147,19 +148,19 @@
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label style="font-size:12px">Telefono</label>
-                                    <input type="text" maxlength="15" style="font-size:12px" class="form-control" @bind="userobj.tel">
+                                    <input type="text" maxlength="15" style="font-size:12px" class="form-control" @bind="userobj.Telefono">
                                 </div>
                             </div>
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label style="font-size:12px">Correo</label>
-                                    <input type="text" maxlength="40" style="font-size:12px" class="form-control" @bind="userobj.correo">
+                                    <input type="text" maxlength="40" style="font-size:12px" class="form-control" @bind="userobj.Correo">
                                 </div>
                             </div>
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label style="font-size:12px">Tipo De Usuario</label>
-                                    <select id="cars" style="font-size:12px;" class="form-control col-auto" @bind="userobj.nivel">
+                                    <select id="cars" style="font-size:12px;" class="form-control col-auto" @bind="userobj.Nivel">
                                         <option value="1">Standard</option>
                                         <option value="2">Administrador</option>
                                     </select>
@@ -170,7 +171,7 @@
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label style="font-size:12px">Alcaldia</label>
-                                    <select id="lClaseVehiculo" @onchange="capturar" class="form-control col-auto" style="font-size:12px" @bind-value="userobj.municipio" @bind-value:event="oninput">
+                                    <select id="lClaseVehiculo" @onchange="capturar" class="form-control col-auto" style="font-size:12px" @bind-value="userobj.Municipio" @bind-value:event="oninput">
                                         <option value="1">Alcaldia de Cimitarra</option>
                                         <option value="2">Alcaldia de Puerto Boyaca</option>
                                     </select>
@@ -179,7 +180,7 @@
 
                             <div class="col-sm-5 mt-4">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" @bind="userobj.habilitado">
+                                    <input class="form-check-input" type="checkbox" @bind="userobj.Habilitado">
                                     <label style="font-size:12px" class="form-check-label">Habilitado</label>
                                 </div>
                             </div>
@@ -275,10 +276,10 @@
     private string nkey1;
     private string nkey2;
     private string nkey;
-    private Usuarios userobj = new Usuarios();
-    private List<Usuarios> user_obj { get; set; }
+    private UsuarioDto userobj = new();
+    private List<UsuarioDto> user_obj { get; set; } = new();
     private bool esModoEditar;
-    IQueryable<Usuarios> data;
+    IQueryable<UsuarioDto> data;
     bool isLoading = false;
     private int Rmun;
 
@@ -312,10 +313,10 @@
         }
     }
 
-    private async Task<List<Usuarios>> GetAll()
+    private async Task<List<UsuarioDto>> GetAll()
     {
         const int cantidadInicial = 11;
-        List<Usuarios> usuarios = new List<Usuarios>();
+        List<UsuarioDto> usuarios = new List<UsuarioDto>();
 
         try
         {
@@ -328,9 +329,10 @@
 
                 if (userHasAccess)
                 {
-                    usuarios = await UsuariosServices.GetAll();
+                    var respuesta = await UsuariosServices.GetAll();
+                    usuarios = respuesta.Value ?? new List<UsuarioDto>();
 
-                    if (usuarios != null && usuarios.Any())
+                    if (usuarios.Any())
                     {
                         return usuarios.Take(cantidadInicial).ToList();
                     }
@@ -341,11 +343,12 @@
                     if (userIdClaim != null && int.TryParse(userIdClaim, out int userId))
                     {
                         Console.WriteLine($"userId: {userId}");
-                        var usuario = await UsuariosServices.GetUserById(userId);
+                        var respuestaUsuario = await UsuariosServices.GetUserById(userId);
+                        var usuario = respuestaUsuario.IsSuccess ? respuestaUsuario.Value : null;
                         if (usuario != null)
                         {
-                            Console.WriteLine($"Usuario encontrado: {usuario.nombre}");
-                            return new List<Usuarios> { usuario };
+                            Console.WriteLine($"Usuario encontrado: {usuario.Nombre}");
+                            return new List<UsuarioDto> { usuario };
                         }
                         else
                         {
@@ -373,7 +376,7 @@
             throw;
         }
 
-        return new List<Usuarios>();
+        return new List<UsuarioDto>();
     }
 
     private async Task capturar(ChangeEventArgs e)
@@ -382,11 +385,11 @@
         Console.WriteLine($" Rnum :{Rmun}");
         if (Rmun == 1)
         {
-            userobj.mun = "Predial_Cimitarra"; userobj.municipio = 1;
+            userobj.MunicipioNombre = "Predial_Cimitarra"; userobj.Municipio = 1;
         }
         if (Rmun == 2)
         {
-            userobj.mun = "Predial_Pto_boyaca"; userobj.municipio = 2;
+            userobj.MunicipioNombre = "Predial_Pto_boyaca"; userobj.Municipio = 2;
         }
     }
 
@@ -401,7 +404,7 @@
     {
         if (!string.IsNullOrEmpty(nkey))
         {
-            var inf = UsuariosServices.ValidatePasswordHash(nkey, userobj.clave);
+            var inf = UsuariosServices.ValidatePasswordHash(nkey, userobj.Clave);
             if (inf == false)
             {
                 // Reemplazado Radzen DialogService por alerta web estándar
@@ -414,22 +417,18 @@
 
     private async Task findbyplaca()
     {
-        var infraccionesList = await UsuariosServices.GetUserByName(buscarnit);
-        if (infraccionesList != null && infraccionesList.Count > 0)
+        var respuesta = await UsuariosServices.GetUserByName(buscarnit);
+        user_obj = respuesta.Value ?? new List<UsuarioDto>();
+        if (user_obj.Count == 0)
         {
-            user_obj = infraccionesList;
-        }
-        else
-        {
-            user_obj = new List<Usuarios>();
             Console.WriteLine("No se encontraron resultados.");
         }
     }
 
-    void EditarUsuarios(Usuarios usuarios)
+    void EditarUsuarios(UsuarioDto usuarios)
     {
         userobj = usuarios;
-        Rmun = userobj.municipio;
+        Rmun = userobj.Municipio;
         esModoEditar = true;
         mostrarModal = true;
     }
@@ -440,11 +439,11 @@
         { mostrarClave = true; }
     }
 
-    private async Task Actualizar(Usuarios usuarios)
+    private async Task Actualizar(UsuarioDto usuarios)
     {
-        var count = await UsuariosServices.EditUsuarios(userobj);
+        var resultado = await UsuariosServices.EditUsuarios(userobj);
 
-        if (count > 0)
+        if (resultado.IsSuccess)
         {
             mostrarModal = true;
             StateHasChanged();
@@ -452,14 +451,21 @@
         }
         else
         {
-            Console.WriteLine("Error al actualizar el infractor.");
+            Console.WriteLine($"Error al actualizar el usuario: {resultado.Error}");
         }
     }
 
     private async Task Agregar()
     {
         var result = await UsuariosServices.Add(userobj);
-        mostrarModal = false;
+        if (result.IsSuccess)
+        {
+            mostrarModal = false;
+        }
+        else
+        {
+            Console.WriteLine($"Error al agregar el usuario: {result.Error}");
+        }
     }
 
     private async Task Cambiar_Key()
@@ -470,7 +476,7 @@
             {
                 return;
             }
-            var inf = UsuariosServices.ValidatePasswordHash(nkey, userobj.clave);
+            var inf = UsuariosServices.ValidatePasswordHash(nkey, userobj.Clave);
             if (inf == false)
             {
                 return;
@@ -480,8 +486,15 @@
             {
                 return;
             }
-            var result = await UsuariosServices.Change_key(userobj.id, nkey1);
-            mostrarClave = false;
+            var result = await UsuariosServices.Change_key(userobj.Id, nkey1);
+            if (result.IsSuccess)
+            {
+                mostrarClave = false;
+            }
+            else
+            {
+                Console.WriteLine($"Error al cambiar la clave: {result.Error}");
+            }
         }
     }
 
@@ -489,8 +502,15 @@
     {
         if (esModoEditar)
         {
-            var result = await UsuariosServices.Reset_key(userobj.id);
-            mostrarModal = false;
+            var result = await UsuariosServices.Reset_key(userobj.Id);
+            if (result.IsSuccess)
+            {
+                mostrarModal = false;
+            }
+            else
+            {
+                Console.WriteLine($"Error al restablecer la clave: {result.Error}");
+            }
         }
     }
 
@@ -503,9 +523,11 @@
         }
         else
         {
-            userobj = new Usuarios();
-            userobj.nivel = 1;
-            userobj.habilitado = true;
+            userobj = new UsuarioDto
+            {
+                Nivel = 1,
+                Habilitado = true
+            };
         }
     }
 

@@ -1,25 +1,17 @@
 ﻿@page "/Consultapage"
-@using Coactivos_Predial.Models;
 @using Coactivos_Predial.Shared.Components;
 @using Coactivos_Predial.Shared.Models;
-@using Coactivos_Predial.Shared.Services;
-@using Coactivos_Predial.Shared.Services.FileHandler;
 @using Coactivos_Predial.Shared.Services.SDatabase
 @using Coactivos_Predial.Shared.Services.SPropietarios;
-@using Microsoft.AspNetCore.Components.Forms;
-@using System.Security.Claims
 @using Coactivos_Predial.Shared.Services.Document
 @using Coactivos_Predial.Shared.Services.SPredios
 
 @rendermode InteractiveServer
-@inject IConfiguration config
-@inject IArchivoService _archivoService
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IDocumentoLinkService DocumentoLinkService
 @inject IConnectionService _connectionService
-@inject BusquedaService busquedaService
-@inject IPrediosService comparendoService
+@inject IPrediosService prediosService
 @inject IpropietariosService propietariosService
 
 <PageTitle>Consulta de predio</PageTitle>
@@ -35,7 +27,7 @@
             <div class="w-full flex-1">
                 <UiField Label="Código predial" For="codigo-predial" Help="Ingrese el código y presione Consultar.">
                     <UiInput Id="codigo-predial"
-                             @bind-Value="comp_obj.codigo"
+                             @bind-Value="Predio.Codigo"
                              Mono="true"
                              Placeholder="Ej. 01-02-0034-0012-000"
                              Autocomplete="off"
@@ -88,41 +80,41 @@ else if (!busquedaRealizada)
                 <dl class="divide-y divide-line">
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Propietario</dt>
-                        <dd class="truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(comp_obj.nombre) ? "Sin dato" : comp_obj.nombre)</dd>
+                        <dd class="truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(Predio.PropietarioNombre) ? "Sin dato" : Predio.PropietarioNombre)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Cédula / NIT</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(comp_obj.cedula) ? "—" : comp_obj.cedula)</dd>
+                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(Predio.PropietarioDocumento) ? "—" : Predio.PropietarioDocumento)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Matrícula</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(comp_obj.matricula) ? "—" : comp_obj.matricula)</dd>
+                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(Predio.Matricula) ? "—" : Predio.Matricula)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Dirección</dt>
-                        <dd class="truncate text-right text-sm text-ink-900" title="@comp_obj.dir">@(string.IsNullOrWhiteSpace(comp_obj.dir) ? "—" : comp_obj.dir)</dd>
+                        <dd class="truncate text-right text-sm text-ink-900" title="@Predio.Direccion">@(string.IsNullOrWhiteSpace(Predio.Direccion) ? "—" : Predio.Direccion)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Área terreno</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@comp_obj.area_tet.ToString("N0")</dd>
+                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(Predio.AreaTerreno?.ToString("N0") ?? "—")</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Área construida</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@comp_obj.area_con.ToString("N0")</dd>
+                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(Predio.AreaConstruida?.ToString("N0") ?? "—")</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Zona / Estrato</dt>
                         <dd class="truncate text-right text-sm text-ink-900">
-                            @(string.IsNullOrWhiteSpace(comp_obj.zona) ? "—" : comp_obj.zona)
-                            @if (!string.IsNullOrWhiteSpace(comp_obj.estrato))
+                            @(string.IsNullOrWhiteSpace(Predio.Zona) ? "—" : Predio.Zona)
+                            @if (!string.IsNullOrWhiteSpace(Predio.Estrato))
                             {
-                                <span class="text-ink-500"> / @comp_obj.estrato</span>
+                                <span class="text-ink-500"> / @Predio.Estrato</span>
                             }
                         </dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Condición</dt>
-                        <dd class="truncate text-right text-sm font-medium @(comp_obj.exento ? "text-warn-600" : "text-ok-600")">@(string.IsNullOrWhiteSpace(nentidad) ? "Sin dato" : nentidad)</dd>
+                        <dd class="truncate text-right text-sm font-medium @(Predio.Exento == true ? "text-warn-600" : "text-ok-600")">@(string.IsNullOrWhiteSpace(nentidad) ? "Sin dato" : nentidad)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Avalúo</dt>
@@ -138,7 +130,7 @@ else if (!busquedaRealizada)
                         <UiLoading Text="Cargando propietarios…" />
                     </div>
                 }
-                else if (propietlist is null || !propietlist.Any())
+                else if (PropietarioDto is null || !PropietarioDto.Any())
                 {
                     <UiEmpty Icon="users"
                              Title="Sin propietarios registrados"
@@ -146,10 +138,6 @@ else if (!busquedaRealizada)
                 }
                 else
                 {
-                    <div class="border-b border-line px-3 py-2">
-                        <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
-                               class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
-                    </div>
                     <UiTable Class="min-w-[690px] max-h-[calc(100vh-430px)] min-h-[160px] overscroll-contain">
                         <Header>
                             <tr>
@@ -159,12 +147,12 @@ else if (!busquedaRealizada)
                             </tr>
                         </Header>
                         <ChildContent>
-                            @foreach (var prop in propietlist)
+                            @foreach (var prop in PropietarioDto)
                             {
                                 <tr>
-                                    <td class="font-numeric">@prop.documento</td>
-                                    <td>@(string.IsNullOrWhiteSpace(prop.nombre) ? "—" : prop.nombre)</td>
-                                    <td>@(string.IsNullOrWhiteSpace(prop.ntipo) ? "—" : prop.ntipo)</td>
+                                    <td class="font-numeric">@prop.Documento</td>
+                                    <td>@(string.IsNullOrWhiteSpace(prop.Nombre) ? "—" : prop.Nombre)</td>
+                                    <td>@prop.TipoId</td>
                                 </tr>
                             }
                         </ChildContent>
@@ -176,7 +164,7 @@ else if (!busquedaRealizada)
         <!-- Columna derecha: documentos -->
         <UiPanel Title="Documentos" Subtitle="@DocumentosResumen" BodyClass="p-0">
             <Actions>
-                <UiButton Variant="ghost" Size="sm" OnClick="GetPdfs" Title="Actualizar" AriaLabel="Actualizar documentos">
+                <UiButton Variant="ghost" Size="sm"  Title="Actualizar" AriaLabel="Actualizar documentos">
                     <UiIcon Name="refresh" />
                 </UiButton>
                 <UiButton Variant="primary" Size="sm" OnClick="AbrirModalSubir">
@@ -186,7 +174,7 @@ else if (!busquedaRealizada)
             </Actions>
 
             <ChildContent>
-                @if (listDocs is null || !listDocs.Any())
+                @if (DocumentosDto is null || !DocumentosDto.Any())
                 {
                     <UiEmpty Icon="file-text"
                              Title="Este predio aún no tiene documentos"
@@ -201,6 +189,10 @@ else if (!busquedaRealizada)
                 }
                 else
                 {
+                    <div class="border-b border-line px-3 py-2">
+                        <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
+                               class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
+                    </div>
                     <UiTable>
                         <Header>
                             <tr>
@@ -257,7 +249,7 @@ else if (!busquedaRealizada)
                         <UiLoading Text="Cargando procesos…" />
                     </div>
                 }
-                else if (procesoslist is null || !procesoslist.Any())
+                else if (ProcesosDto is null || !ProcesosDto.Any())
                 {
                     <UiEmpty Icon="archive"
                              Title="Sin procesos de cobro coactivo"
@@ -274,12 +266,12 @@ else if (!busquedaRealizada)
                             </tr>
                         </Header>
                         <ChildContent>
-                            @foreach (var proc in procesoslist)
+                            @foreach (var proc in ProcesosDto)
                             {
                                 <tr>
-                                    <td class="font-numeric">@(string.IsNullOrWhiteSpace(proc.resolucion) ? "—" : proc.resolucion)</td>
-                                    <td class="font-numeric">@FechaTexto(proc.fecha_mdto)</td>
-                                    <td><UiBadge Variant="neutral">@proc.nestado</UiBadge></td>
+                                    <td class="font-numeric">@(string.IsNullOrWhiteSpace(proc.Resolucion) ? "—" : proc.Resolucion)</td>
+                                    <td class="font-numeric">@FechaTexto(proc.FechaMandamiento)</td>
+                                    <td><UiBadge Variant="neutral">@proc.NombreEstado</UiBadge></td>
                                 </tr>
                             }
                         </ChildContent>
@@ -331,15 +323,15 @@ else if (!busquedaRealizada)
         <div class="space-y-3">
             <UiField Label="Detalle del documento" For="documento-nombre">
                 <UiInput Id="documento-nombre"
-                         @bind-Value="Docsobj.Nombre"
+                         @bind-Value="Documentos.Nombre"
                          Placeholder="Ej. Recibo de pago, notificación"
                          Autocomplete="off" />
             </UiField>
 
             <UiField Label="Archivo PDF" For="documento-archivo">
-                <UiFileDrop @key="Docsobj"
+                <UiFileDrop @key="Documentos"
                             Id="documento-archivo"
-                            FileName="@Docsobj.Ruta"
+                            FileName="@Documentos.Ruta"
                             Accept=".pdf"
                             Help="Solo archivos PDF, máximo 4 MB."
                             OnChange="ArchivoSeleccionado"
@@ -352,7 +344,7 @@ else if (!busquedaRealizada)
         <UiButton Variant="primary"
                   OnClick="SubirDocumento"
                   Loading="@subiendo"
-                  Disabled="@(subiendo || string.IsNullOrWhiteSpace(Docsobj.Nombre) || string.IsNullOrWhiteSpace(Docsobj.Ruta) || loadedFiles.Count != 1)">
+                  Disabled="@(subiendo || string.IsNullOrWhiteSpace(Documentos.Nombre) || string.IsNullOrWhiteSpace(Documentos.Ruta) || loadedFiles.Count != 1)">
             <UiIcon Name="upload" />
             Subir PDF
         </UiButton>

@@ -45,14 +45,13 @@ namespace Coactivos_Predial.Pages.PLogin
         public async Task<IActionResult> OnPostAsync()
         {
             Usuarios usuarios = new();
-            usuarios.nombre = firstName;
-            usuarios.login = email;
-            usuarios.clave = password;
-            Console.WriteLine($"paso por el onpost y la clave del usuario es:{email} y el nombre es: {firstName} y la clave es:{password}");
+            usuarios.Nombre = firstName;
+            usuarios.Login = email;
+            usuarios.Clave = password;
             var registration = await _loginService.UserRegistrationAsync(usuarios);
-            if (!registration.Success)
+            if (registration.IsFailure)
             {
-                Console.WriteLine($"paso por registration:{registration}");
+                ErrorMessage = registration.Error ?? "No fue posible completar el registro.";
             }
             else
             {

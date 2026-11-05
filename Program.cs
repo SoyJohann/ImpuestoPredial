@@ -31,6 +31,12 @@ using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (args.Contains("--migrate-legacy-data", StringComparer.Ordinal))
+{
+    await Coactivos_Predial.Database.LegacyDataMigration.RunAsync(builder.Configuration);
+    return;
+}
+
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient();
 builder.Services.AddRadzenComponents();

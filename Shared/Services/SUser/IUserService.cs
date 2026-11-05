@@ -1,23 +1,25 @@
-﻿using Coactivos_Predial.Models;
-using Coactivos_Predial.Shared.Models;
+using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.SUser.Responses;
 
-namespace Coactivos_Predial.Shared.Services.SUser
+namespace Coactivos_Predial.Shared.Services.SUser;
+
+public interface IUserService
 {
-    public interface IUserService
-    {
-        Task<int> Add(Usuarios usuarios);
-        
-        Task<int> Change_key(int pid, string skey);
-        Task<List<Usuarios>> GetAll();
-        Task<int> Reset_key(int pid);
-        Task<int> EditUsuarios(Usuarios usuarios);
+    Task<Result> Add(UsuarioDto usuarios);
 
-        Task<int> DeleteUsuarioById(int id);
+    Task<Result> Change_key(int pid, string skey);
 
-        Task<Usuarios> GetUserById(int id);
+    Task<Result<List<UsuarioDto>>> GetAll();
 
-        Task<List<Usuarios>> GetUserByName(string nombre);
+    Task<Result> Reset_key(int pid);
 
-        bool ValidatePasswordHash(string password, string dbPassword);
-    }
+    Task<Result> EditUsuarios(UsuarioDto usuarios);
+
+    Task<Result> DeleteUsuarioById(int id);
+
+    Task<Result<UsuarioDto?>> GetUserById(int id);
+
+    Task<Result<List<UsuarioDto>>> GetUserByName(string nombre);
+
+    bool ValidatePasswordHash(string password, string dbPassword);
 }

@@ -1,23 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+namespace Coactivos_Predial.Shared.Models;
 
-namespace Coactivos_Predial.Models
+/// <summary>
+/// Proyección Dapper de la base municipal anterior; no forma una tabla del contexto code-first.
+/// </summary>
+public class Persuasivos
 {
-    public class Persuasivos
-    {
-        public int id { get; set; }
-        public string comparendo { get; set; }
-        public string cedula { get; set; }
-        public DateTime fecha { get; set; }
-        public string nombres { get; set; }
-        public string infraccion { get; set; }
-        public string dir { get; set; }
-        public string tel { get; set; }
-        public double valor { get; set; }
-        public string ciudad { get; set; }
-        public DateTime fecven { get; set; }
-        public string dpto { get; set; }
-    }
+    public int Id { get; set; }
+    public string Comparendo { get; set; } = string.Empty;
+    public string Cedula { get; set; } = string.Empty;
+    public DateTime Fecha { get; set; }
+    public string Nombres { get; set; } = string.Empty;
+    public string Infraccion { get; set; } = string.Empty;
+    public string Direccion { get; set; } = string.Empty;
+    public string Telefono { get; set; } = string.Empty;
+    public double Valor { get; set; }
+    public string Ciudad { get; set; } = string.Empty;
+    public DateTime FechaVencimiento { get; set; }
+    public string Departamento { get; set; } = string.Empty;
 }

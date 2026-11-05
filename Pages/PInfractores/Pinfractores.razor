@@ -3,6 +3,7 @@
 @using Coactivos_Predial.Models;
 @using Coactivos_Predial.Shared.Models
 @using Coactivos_Predial.Shared.Services.SPropietarios;
+@using Coactivos_Predial.Shared.Services.SPropietarios.Responses;
 @inject NavigationManager NavigationManager
 @inject IpropietariosService InfractoresService;
 @inject IJSRuntime js
@@ -64,10 +65,10 @@
                                         @foreach (var infractor in infractores)
                                         {
                                             <tr>
-                                                <td>@infractor.documento</td>
-                                                <td>@infractor.nombre</td>
-                                                <td>@infractor.tel</td>
-                                                <td>@infractor.correo</td>
+                                                <td>@infractor.Documento</td>
+                                                <td>@infractor.Nombre</td>
+                                                <td>@infractor.Telefono</td>
+                                                <td>@infractor.Correo</td>
                                                 <td class="text-center">
                                                     <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-primary btn-sm" @onclick="() => EditarInfractor(infractor)">
                                                         Editar
@@ -108,7 +109,7 @@
                         <div class="col-sm-4">
                             <div class="form-group">
                                 <label style="font-size:12px">Tipo Identificación</label>
-                                <select id="cars" class="form-control col-auto" style="font-weight: bold; font-size:12px" @bind="infractoresobj.tipo_id">
+                                <select id="cars" class="form-control col-auto" style="font-weight: bold; font-size:12px" @bind="infractoresobj.TipoId">
                                     <option value="1">Cedula Ciudadania</option>
                                     <option value="2">Tarjeta Identidad</option>
                                     <option value="3">Cedula Extranjeria</option>
@@ -122,7 +123,7 @@
                         <div class="col-sm-8">
                             <div class="form-group">
                                 <label style="font-size:12px">Cédula Propietario</label>
-                                <input type="text" class="form-control" maxlength="13" style="font-weight: bold;" @bind="infractoresobj.documento">
+                                <input type="text" class="form-control" maxlength="13" style="font-weight: bold;" @bind="infractoresobj.Documento">
                             </div>
                         </div>
                     </div>
@@ -130,7 +131,7 @@
                         <div class="col-12">
                             <div class="form-group">
                                 <label style="font-size:12px">Nombre Propietario</label>
-                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="30" @bind="infractoresobj.nombre">
+                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="30" @bind="infractoresobj.Nombre">
                             </div>
                         </div>
                     </div>
@@ -138,13 +139,13 @@
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label style="font-size:12px">Correo:</label>
-                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="40" @bind="infractoresobj.correo">
+                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="40" @bind="infractoresobj.Correo">
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="form-group">
                                 <label style="font-size:12px">Teléfono:</label>
-                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="15" @bind="infractoresobj.tel">
+                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="15" @bind="infractoresobj.Telefono">
                             </div>
                         </div>
                     </div>
@@ -176,19 +177,20 @@
 @code {
     private bool mostrarModal = false;
     private string buscarnit;
-    private Propietarios infractoresobj = new Propietarios();
-    private List<Propietarios> infractores { get; set; }
+    private PropietarioDto infractoresobj = new();
+    private List<PropietarioDto> infractores { get; set; } = new();
     private bool esModoEditar;
-    IQueryable<Propietarios> data;
+    IQueryable<PropietarioDto> data;
     bool isLoading = false;
 
     protected override async Task OnInitializedAsync()
     {
         await ShowLoading();
         const int cantidadInicial = 8;
-        var todosLosInfractores = await InfractoresService.GetAll();
+        var respuesta = await InfractoresService.GetAll();
+        var todosLosInfractores = respuesta.Value ?? new List<PropietarioDto>();
 
-        if (todosLosInfractores != null && todosLosInfractores.Any())
+        if (todosLosInfractores.Any())
         {
             infractores = todosLosInfractores.Take(cantidadInicial).ToList();
             data = infractores.AsQueryable();
@@ -204,35 +206,35 @@
 
     private async Task findbycedula()
     {
-        var infractoresList = await InfractoresService.GetInfractoresByCedula(buscarnit);
-        if (infractoresList != null && infractoresList.Count > 0)
-        {
-            infractores = infractoresList;
-        }
-        else
-        {
-            infractores = new List<Propietarios>();
-        }
+        var respuesta = await InfractoresService.GetInfractoresByCedula(buscarnit);
+        infractores = respuesta.Value ?? new List<PropietarioDto>();
     }
 
     private async Task Agregar()
     {
         var result = await InfractoresService.Add(infractoresobj);
-        mostrarModal = false;
+        if (result.IsSuccess)
+        {
+            mostrarModal = false;
+        }
+        else
+        {
+            Console.WriteLine($"Error al agregar el propietario: {result.Error}");
+        }
     }
 
-    void EditarInfractor(Propietarios infractor)
+    void EditarInfractor(PropietarioDto infractor)
     {
         infractoresobj = infractor;
         esModoEditar = true;
         mostrarModal = true;
     }
 
-    private async Task Actualizar(Propietarios infractor)
+    private async Task Actualizar(PropietarioDto infractor)
     {
-        var count = await InfractoresService.EditInfractores(infractor);
+        var resultado = await InfractoresService.EditInfractores(infractor);
 
-        if (count > 0)
+        if (resultado.IsSuccess)
         {
             mostrarModal = true;
             StateHasChanged();
@@ -240,7 +242,7 @@
         }
         else
         {
-            Console.WriteLine("Error al actualizar el infractor.");
+            Console.WriteLine($"Error al actualizar el propietario: {resultado.Error}");
         }
     }
 
@@ -254,7 +256,7 @@
         }
         else
         {
-            infractoresobj = new Propietarios();
+            infractoresobj = new PropietarioDto();
         }
     }
 

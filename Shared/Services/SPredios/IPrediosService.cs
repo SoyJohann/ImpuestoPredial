@@ -1,29 +1,24 @@
 using Coactivos_Predial.Shared.Models;
+using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.SPredios.Responses;
 
-namespace Coactivos_Predial.Shared.Services.SPredios
+namespace Coactivos_Predial.Shared.Services.SPredios;
+
+public interface IPrediosService
 {
+    Task<Result> AgregarDocumento(Documentos documento);
 
-    public class Item_res
-    {
-        public int item { get; set; }
-        public int num { get; set; }
-    }
-    public interface IPrediosService
-    {
-        Task<List<Predios>> GetAll();
-        Task<int> AgregarDocumento(Documentos documento);
+    Task<Result> DeleteDocs(int id);
 
-        Task<int> DeleteDocs(int id);
-        Task<List<ComparendoInfo>> GetInfoComparendo(string pcedula);
-        Task<Predios> GetPrediosByCode(string comp);
+    Task<Result<List<PredioBusquedaDto>>> BuscarPrediosPorCedula(string cedula);
 
-        Task<List<Documentos>> GetPdfsByComp(string comp);
+    Task<Result<PredioDto?>> GetPrediosByCode(string codigoBusqueda);
 
-        Task<List<Procesos>> GetCoactivo(string comp);
+    Task<Result<List<DocumentoDto>>> GetPdfsByCode(int predioId);
 
-        Task<List<DocumentoPredial>> Lista_Diario(DateTime pdesde, DateTime phasta);
+    Task<Result<List<ProcesoDto>>> GetCoactivo(string comp);
 
-        Task<Item_res> Pdfs_Resumen(DateTime pdesde, DateTime phasta);
+    Task<Result<List<DocumentoDiarioDto>>> Lista_Diario(DateTime pdesde, DateTime phasta);
 
-    }   
+    Task<Result<ResumenPdfsDto>> Pdfs_Resumen(DateTime pdesde, DateTime phasta);
 }

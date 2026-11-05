@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Coactivos_Predial.Shared.Models;
 
+/// <summary>
+/// Define una categoría de documento perteneciente a un sector y usada para clasificar archivos.
+/// </summary>
 [Table("TiposDocumento")]
 public class TipoDocumento
 {

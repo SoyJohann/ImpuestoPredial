@@ -42,8 +42,8 @@ namespace Coactivos_Predial.Shared.Services.SDatabase
 
             await using var master = await _masterFactory.CreateDbContextAsync();
             Municipio = await master.usuarios
-                .Where(u => u.id == id)
-                .Select(u => u.mun)
+                .Where(u => u.Id == id)
+                .Select(u => u.MunicipioNombre)
                 .FirstOrDefaultAsync();
         }
     }

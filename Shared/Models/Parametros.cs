@@ -1,40 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Coactivos_Predial.Models
+namespace Coactivos_Predial.Models;
+
+/// <summary>
+/// Contiene los parámetros institucionales y de liquidación usados por el municipio.
+/// </summary>
+public class Parametros
 {
-    public class Parametros
-    {
-        [Key]
-        [Required]
-        public int id { get; set; }
+    [Key]
+    public int Id { get; set; }
 
-        public string nit { get; set; }
-        public string dir { get; set; }
-        public string tel { get; set; }
-        public string divipo { get; set; }
-        public string ciudad { get; set; }
-        [Required]
-        public string nombre { get; set; }
+    public string Nit { get; set; } = string.Empty;
+    public string Direccion { get; set; } = string.Empty;
+    public string? Telefono { get; set; }
+    public string? Divipo { get; set; }
+    public string Ciudad { get; set; } = string.Empty;
 
-        public DateOnly fec_ini_interes { get; set; }
+    [Required]
+    public string Nombre { get; set; } = string.Empty;
 
-        public double vlr_recibo { get; set; }
-
-        public string correo { get; set; }
-        public DateOnly fecha_Nueva_ley { get; set; }
-        public DateOnly fin_nueva_ley { get; set; }
-        public bool cobra_adicional { get; set; }
-
-        public bool coactivo_man { get; set; }
-
-        public int dias_persuasivo { get; set; }
-        public int dias_coactivo { get; set; }
-
-        public int dias_mdto { get; set; }
-
-    }
+    public DateTime FechaInicioInteres { get; set; }
+    public double? ValorRecibo { get; set; }
+    public string? Correo { get; set; }
+    public DateTime? FechaNuevaLey { get; set; }
+    public DateTime? FinNuevaLey { get; set; }
+    public bool? CobraAdicional { get; set; }
+    public short? CoactivoManual { get; set; }
+    public int? DiasPersuasivo { get; set; }
+    public int? DiasCoactivo { get; set; }
+    public short? DiasMandamiento { get; set; }
+    public short? Costas { get; set; }
+    public string? CuentaRecaudo { get; set; }
 }

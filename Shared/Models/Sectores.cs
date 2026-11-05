@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Coactivos_Predial.Shared.Models;
 
+/// <summary>
+/// Agrupa los módulos documentales del sistema, como Predial e Industria y Comercio.
+/// </summary>
 [Table("Sectores")]
 public class Sectores
 {

@@ -2,17 +2,16 @@
 
 public class BusquedaService
 {
-    private string? ultimoComparendoCaptured;
+    private string? ultimoCodigoSeleccionado;
 
-    public async Task<string> ComparendoCapturado(string comparendo)
+    public Task GuardarCodigoSeleccionado(string codigoPredial)
     {
-        ultimoComparendoCaptured = comparendo;
-        Console.WriteLine($"comparendo desde el servicio: {ultimoComparendoCaptured}");
-        return ultimoComparendoCaptured;
+        ultimoCodigoSeleccionado = codigoPredial;
+        return Task.CompletedTask;
     }
 
-    public string ObtenerUltimoComparendoCapturado()
+    public string ObtenerUltimoCodigoSeleccionado()
     {
-        return ultimoComparendoCaptured;
+        return ultimoCodigoSeleccionado ?? string.Empty;
     }
 }

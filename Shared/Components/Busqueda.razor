@@ -2,11 +2,12 @@
 @using Coactivos_Predial.Shared.Models
 @using Coactivos_Predial.Shared.Services
 @using Coactivos_Predial.Shared.Services.SPredios
+@using Coactivos_Predial.Shared.Services.SPredios.Responses
 @inject BusquedaService busquedaService
-@inject IPrediosService comparendoService
+@inject IPrediosService prediosService
 
 <div>
-    <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @onsubmit="ComparendoByCedula" @onsubmit:preventDefault>
+    <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @onsubmit="BuscarPorCedula" @onsubmit:preventDefault>
         <div class="flex-1">
             <UiField Label="Documento" For="busqueda-documento">
                 <UiInput Id="busqueda-documento"
@@ -33,16 +34,16 @@
                 </tr>
             </Header>
             <ChildContent>
-                @if (comparendosinfo is not null && comparendosinfo.Any())
+                @if (prediosEncontrados.Any())
                 {
                     @foreach (var item in GetPaginaActual())
                     {
-                        <tr class="@($"cursor-pointer {(selectedComparendo?.codigo == item.codigo ? "bg-accent-50" : string.Empty)}")"
+                        <tr class="@($"cursor-pointer {(predioSeleccionado?.CodigoPredial == item.CodigoPredial ? "bg-accent-50" : string.Empty)}")"
                             @onclick="() => SeleccionarFila(item)">
-                            <td class="font-numeric">@item.codigo</td>
+                            <td class="font-numeric">@item.CodigoPredial</td>
                             <td>@item.Nombre</td>
-                            <td>@item.dir</td>
-                            <td class="num">@item.avaluo.ToString("C")</td>
+                            <td>@item.Direccion</td>
+                            <td class="num">@item.Avaluo.ToString("C")</td>
                         </tr>
                     }
                 }
@@ -58,10 +59,10 @@
         </UiTable>
     </div>
 
-    <UiPager Page="paginaActual" PageSize="5" TotalItems="comparendosinfo.Count()" OnPageChanged="CambiarPagina" />
+    <UiPager Page="paginaActual" PageSize="5" TotalItems="prediosEncontrados.Count" OnPageChanged="CambiarPagina" />
     <div class="mt-4 flex flex-wrap justify-end gap-2">
         <UiButton Variant="secondary" OnClick="Cerrar">Cancelar</UiButton>
-        <UiButton Variant="primary" OnClick="EnviarDatos" Disabled="@(selectedComparendo == null)">
+        <UiButton Variant="primary" OnClick="EnviarDatos" Disabled="@(predioSeleccionado is null)">
             <UiIcon Name="check" />
             Seleccionar
         </UiButton>
@@ -72,28 +73,31 @@
     [Parameter] public EventCallback<string> OnSeleccionado { get; set; }
     [Parameter] public EventCallback OnCerrar { get; set; }
 
-    private IEnumerable<ComparendoInfo> comparendosinfo = Enumerable.Empty<ComparendoInfo>();
-    private ComparendoInfo? selectedComparendo;
+    private List<PredioBusquedaDto> prediosEncontrados = new();
+    private PredioBusquedaDto? predioSeleccionado;
     private string? pcedula;
     private int paginaActual = 1;
 
     protected override void OnInitialized()
     {
-        pcedula = busquedaService.ObtenerUltimoComparendoCapturado();
+        pcedula = busquedaService.ObtenerUltimoCodigoSeleccionado();
     }
 
-    private IEnumerable<ComparendoInfo> GetPaginaActual()
+    private IEnumerable<PredioBusquedaDto> GetPaginaActual()
     {
-        if (comparendosinfo is null || !comparendosinfo.Any()) return Enumerable.Empty<ComparendoInfo>();
         int skip = (paginaActual - 1) * 5;
-        return comparendosinfo.Skip(skip).Take(5);
+        return prediosEncontrados.Skip(skip).Take(5);
     }
 
-    private async Task ComparendoByCedula()
+    private async Task BuscarPorCedula()
     {
         if (!string.IsNullOrWhiteSpace(pcedula))
         {
-            comparendosinfo = await comparendoService.GetInfoComparendo(pcedula.Trim());
+            var resultado = await prediosService.BuscarPrediosPorCedula(pcedula.Trim());
+            prediosEncontrados = resultado.IsSuccess && resultado.Value is not null
+                ? resultado.Value
+                : new List<PredioBusquedaDto>();
+            predioSeleccionado = null;
             paginaActual = 1;
         }
     }
@@ -105,15 +109,15 @@
 
     private async Task EnviarDatos()
     {
-        if (selectedComparendo is null)
+        if (predioSeleccionado is null)
         {
             return;
         }
-        string comparendoCodigo = selectedComparendo.codigo;
-        await busquedaService.ComparendoCapturado(comparendoCodigo);
+        var codigoPredial = predioSeleccionado.CodigoPredial;
+        await busquedaService.GuardarCodigoSeleccionado(codigoPredial);
         if (OnSeleccionado.HasDelegate)
         {
-            await OnSeleccionado.InvokeAsync(comparendoCodigo);
+            await OnSeleccionado.InvokeAsync(codigoPredial);
         }
     }
 
@@ -125,8 +129,8 @@
         }
     }
 
-    private void SeleccionarFila(ComparendoInfo item)
+    private void SeleccionarFila(PredioBusquedaDto item)
     {
-        selectedComparendo = item;
+        predioSeleccionado = item;
     }
 }

@@ -35,21 +35,20 @@ namespace Coactivos_Predial.Pages.PLogin
 
         public async Task<IActionResult> OnPost()
         {
-            Console.WriteLine($"Usuario: {UserName}, Contrase�a: {pass}");
             var result = await _loginService.UserLoginAsync(UserName, pass);
 
-            if (result == 1)
+            if (result.IsSuccess)
             {
                 mensaje = "Clave Correcta";
-                Console.WriteLine("�xito en el inicio de sesi�n");
                 return Redirect("/Consultapage");
             }
             else
             {
 
                 mensaje = "Clave Incorrecta";
-                Console.WriteLine($"Error en iniciar sesion:{mensaje}");
-                TempData["ErrorMessage"] = "Usuario o clave incorrectos. Verifique los datos e intente de nuevo.";
+                TempData["ErrorMessage"] = result.Type == Coactivos_Predial.Shared.Services.Common.ResultErrorType.Unauthorized
+                    ? "Usuario o clave incorrectos. Verifique los datos e intente de nuevo."
+                    : result.Error ?? "No fue posible validar el acceso en este momento.";
 				return Page();
             }
         }

@@ -1,28 +1,27 @@
-﻿using Coactivos_Predial.Models;
-using Coactivos_Predial.Shared.Models;
+using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.SPropietarios.Responses;
 
-namespace Coactivos_Predial.Shared.Services.SPropietarios
+namespace Coactivos_Predial.Shared.Services.SPropietarios;
+
+public interface IpropietariosService
 {
-    public interface IpropietariosService
-    {
+    Task<Result> Add(PropietarioDto infractor);
 
-        Task<int > Add(Propietarios infractores);
+    Task<Result<List<PropietarioDto>>> GetInfractoresByCedula(string cedula);
 
-        Task<List<Propietarios>> GetInfractoresByCedula(string cedula);
+    Task<Result<List<PropietarioDto>>> PropietariosBypredial(string codigo);
 
-        Task<List<Propietarios>> PropietariosBypredial(string codigo);
-        Task<string> GetNameInfractorBycode(string code,int tipo);
-        Task<List<Propietarios>> GetList();
+    Task<Result<string?>> GetNameInfractorBycode(string code, int tipo);
 
-        Task<Propietarios> GetInfractorById(int id);
-        Task<List<Propietarios>> GetAll();
-        
-        Task<int> EditInfractores(Propietarios infracciones);
-        
-        int DeleteInfractores(int id);
+    Task<Result<List<PropietarioDto>>> GetList();
 
-        Propietarios GetInfractores(int id);
+    Task<Result<PropietarioDto?>> GetInfractorById(int id);
 
+    Task<Result<List<PropietarioDto>>> GetAll();
 
-    }
+    Task<Result> EditInfractores(PropietarioDto infractor);
+
+    Task<Result> DeleteInfractores(int id);
+
+    Task<Result<PropietarioDto?>> GetInfractores(int id);
 }

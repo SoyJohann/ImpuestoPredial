@@ -1,30 +1,17 @@
-﻿using Coactivos_Predial.Models;
-using System.ComponentModel.DataAnnotations;
+using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.SParametros.Responses;
 
-namespace Coactivos_Predial.Shared.Services.SParametros
+namespace Coactivos_Predial.Shared.Services.SParametros;
+
+public interface IParametroService
 {
+    Task<Result<List<ParametroDto>>> GetAll();
 
-    public class Estados_proc
-    {
-        [Required]
-        [Key]
-        public int id { get; set; }
-        [StringLength(20)]
-        [Required]
-        public string nombre { get; set; }
+    Task<Result> EditParametros(int id, ParametroDto parametros);
 
-        [Required]
-        public float porc { get; set; }
-    }
+    Task<Result> EditEstados(EstadoProcesoDto estado);
 
-    public interface IParametroService
-    {
-        Task<List<Parametros>> GetAll();
+    Task<Result<ParametroDto?>> GetParametroById(int id);
 
-        Task<int> EditParametros(int id, Parametros parametros);
-        Task<int> EditEstados(Estados_proc agentes_obj);
-        Task<Parametros>GetParametroById(int id);
-        Task<List<Estados_proc>> Getlist();
-
-    }
+    Task<Result<List<EstadoProcesoDto>>> Getlist();
 }

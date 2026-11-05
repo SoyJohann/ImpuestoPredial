@@ -1,14 +1,11 @@
-﻿using Coactivos_Predial.Shared.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.FileHandler.Responses;
 
-namespace Coactivos_Predial.Shared.Services.FileHandler
+namespace Coactivos_Predial.Shared.Services.FileHandler;
+
+public interface IArchivoService
 {
-    public interface IArchivoService
-    {
+    Task<Result<List<ArchivoDto>>> GetFiles(string name);
 
-        Task<List<Archivo>> GetFiles(string name);
-        Task DownloadFileFromServer(string url, string destinationPath);
-
-    }
+    Task<Result> DownloadFileFromServer(string url, string destinationPath);
 }

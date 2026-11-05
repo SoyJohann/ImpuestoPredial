@@ -2,6 +2,7 @@
 @using Coactivos_Predial.Shared.Services;
 @using Coactivos_Predial.Shared.Models;
 @using Coactivos_Predial.Shared.Services.SImportados;
+@using Coactivos_Predial.Shared.Services.SImportados.Responses;
 @inject NavigationManager NavigationManager
 @inject IimportadosService ImportServices;
 @inject IJSRuntime JSRuntime
@@ -103,11 +104,11 @@
                                 @foreach (var item in Itemlist)
                                 {
                                     <tr>
-                                        <td class="fw-bold">@item.codigo</td>
-                                        <td>@item.nombre</td>
-                                        <td>@item.dir</td>
-                                        <td>@item.cedula</td>
-                                        <td class="text-end text-success fw-semibold">@item.avaluo.ToString("C")</td>
+                                        <td class="fw-bold">@item.Codigo</td>
+                                        <td>@item.Nombre</td>
+                                        <td>@item.Direccion</td>
+                                        <td>@item.Cedula</td>
+                                        <td class="text-end text-success fw-semibold">@(item.Avaluo?.ToString("C") ?? "—")</td>
                                     </tr>
                                 }
                             </tbody>
@@ -142,7 +143,7 @@
 }
 
 @code {
-    public List<Importados> Itemlist { get; set; } = new List<Importados>();
+    public List<ImportadoDto> Itemlist { get; set; } = new List<ImportadoDto>();
 
     bool isLoading = false;
     private bool tab1 = true;
@@ -195,7 +196,7 @@
                 using (var stream = archivo.OpenReadStream(maxFileSize))
                 using (var reader = new StreamReader(stream))
                 {
-                    ImportServices.DeleteAll();
+                    await ImportServices.DeleteAll();
 
                     string linea;
                     string td;
@@ -204,27 +205,31 @@
                         Importados importObj = new Importados();
                         try
                         {
-                            importObj.codigo = linea.Substring(297, 15);
-                            importObj.cedula = linea.Substring(139, 12);
-                            importObj.nombre = linea.Substring(37, 60);
-                            importObj.dir = linea.Substring(151, 60);
+                            importObj.Codigo = linea.Substring(297, 15);
+                            importObj.Cedula = linea.Substring(139, 12);
+                            importObj.Nombre = linea.Substring(37, 60);
+                            importObj.Direccion = linea.Substring(151, 60);
                             td = linea.Substring(138, 1);
-                            importObj.avaluo = float.Parse(linea.Substring(274, 14));
-                            importObj.area_tet = int.Parse(linea.Substring(253, 14));
-                            importObj.area_con = int.Parse(linea.Substring(268, 6));
+                            importObj.Avaluo = float.Parse(linea.Substring(274, 14));
+                            importObj.AreaTerreno = int.Parse(linea.Substring(253, 14));
+                            importObj.AreaConstruida = int.Parse(linea.Substring(268, 6));
 
-                            if (td == "C") { importObj.tipo = 1; }
-                            if (td == "N") { importObj.tipo = 4; }
+                            if (td == "C") { importObj.Tipo = 1; }
+                            if (td == "N") { importObj.Tipo = 4; }
 
-                            importObj.matricula = "SIN MATRICULA";
-                            importObj.estado = 1;
-                            importObj.municipio = false;
-                            importObj.exento = false;
-                            importObj.estrato = "1";
-                            importObj.zona = "A";
-                            importObj.desenglobo = false;
+                            importObj.Matricula = "SIN MATRICULA";
+                            importObj.EsMunicipio = false;
+                            importObj.Exento = false;
+                            importObj.Estrato = "1";
+                            importObj.Zona = "A";
+                            importObj.Desenglobo = false;
 
-                            await ImportServices.Add(importObj);
+                            var agregado = await ImportServices.Add(importObj);
+                            if (agregado.IsFailure)
+                            {
+                                Console.WriteLine($"No se pudo guardar la línea: {agregado.Error}");
+                                continue;
+                            }
                             value = value + 1;
                             StateHasChanged();
                         }
@@ -268,9 +273,16 @@
         bot = false;
         StateHasChanged();
 
-        await ImportServices.Procesa_Comp(1);
+        var resultado = await ImportServices.Procesa_Comp(1);
 
-        await JSRuntime.InvokeVoidAsync("alert", "Archivo Procesado Correctamente.");
+        if (resultado.IsSuccess)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Archivo Procesado Correctamente.");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", resultado.Error ?? "No fue posible procesar el archivo.");
+        }
 
         bot = true;
         bot2 = false;
@@ -284,7 +296,8 @@
     private async Task Mostrar_Plano()
     {
         await ShowLoading();
-        Itemlist = await ImportServices.GetList();
+        var resultado = await ImportServices.GetList();
+        Itemlist = resultado.Value ?? new List<ImportadoDto>();
     }
 
     async Task ShowLoading()

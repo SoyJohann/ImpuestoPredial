@@ -5,6 +5,7 @@
 @using Coactivos_Predial.Shared.Services;
 @using System.Diagnostics
 @using Coactivos_Predial.Shared.Services.SPredios
+@using Coactivos_Predial.Shared.Services.SPredios.Responses
 @inject NavigationManager NavigationManager
 @inject IPrediosService Rep_resolServices;
 
@@ -39,7 +40,7 @@
                             </div>
                             <div>
                                 <div class="text-muted small">Items</div>
-                                <div class="fw-bold fs-5">@itemx.item</div>
+                                <div class="fw-bold fs-5">@itemx.Item</div>
                             </div>
                         </div>
                     </div>
@@ -53,7 +54,7 @@
                             </div>
                             <div>
                                 <div class="text-muted small">PDFs</div>
-                                <div class="fw-bold fs-5">@itemx.num</div>
+                                <div class="fw-bold fs-5">@itemx.Num</div>
                             </div>
                         </div>
                     </div>
@@ -112,12 +113,12 @@
 
 @code {
     private bool mostrarModal = false;
-    public List<DocumentoPredial> Itemlist { get; set; } = new List<DocumentoPredial>();
-    public Item_res itemx { get; set; } = new Item_res();
+    public List<DocumentoDiarioDto> Itemlist { get; set; } = new List<DocumentoDiarioDto>();
+    public ResumenPdfsDto itemx { get; set; } = new ResumenPdfsDto(0, 0);
     public DateTime desde;
     public DateTime hasta;
 
-    IQueryable<DocumentoPredial> data;
+    IQueryable<DocumentoDiarioDto> data;
     bool isLoading = false;
     public int num_ss;
 
@@ -139,9 +140,17 @@
         try
         {
             await ShowLoading();
-            Itemlist = await Rep_resolServices.Lista_Diario(desde, hasta);
+            var listaResult = await Rep_resolServices.Lista_Diario(desde, hasta);
+            Itemlist = listaResult.Value ?? new List<DocumentoDiarioDto>();
             data = Itemlist.AsQueryable();
-            itemx = await Rep_resolServices.Pdfs_Resumen(desde, hasta);
+
+            var resumenResult = await Rep_resolServices.Pdfs_Resumen(desde, hasta);
+            itemx = resumenResult.Value ?? new ResumenPdfsDto(0, 0);
+
+            if (listaResult.IsFailure || resumenResult.IsFailure)
+            {
+                Console.WriteLine($"Error al consultar el reporte diario: {listaResult.Error ?? resumenResult.Error}");
+            }
         }
         catch (Exception ex)
         {

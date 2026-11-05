@@ -1,6 +1,8 @@
 namespace Coactivos_Predial.Shared.Models;
 
-// DTO de transición para las consultas Dapper que aún usan codigo_predial y archivo.
+/// <summary>
+/// Proyección de solo lectura que usan los reportes de documentos prediales consultados con Dapper.
+/// </summary>
 public class DocumentoPredial
 {
     public int Id { get; set; }

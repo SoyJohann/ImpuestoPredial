@@ -1,16 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Coactivos_Predial.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.Spersuasivo.Responses;
 
-namespace Coactivos_Predial.Shared.Services.Spersuasivo
+namespace Coactivos_Predial.Shared.Services.Spersuasivo;
+
+public interface IPersuasivoService
 {
-    public interface IPersuasivoService
-    {
+    Task<Result<List<PersuasivoDto>>> GetList(int opcion, string pcomp, DateTime pdesde, DateTime phasta, int pvigencia, int ptran);
 
-        Task<List<Persuasivos>> GetList(int opcion, string pcomp, DateTime pdesde, DateTime phasta, int pvigencia, int ptran);
-
-        Task<int> Procesa_Per(int opcion, string pcomp, DateTime pdesde, DateTime phasta, int pvigencia, int ptran);
-    }
-
+    Task<Result> Procesa_Per(int opcion, string pcomp, DateTime pdesde, DateTime phasta, int pvigencia, int ptran);
 }

@@ -3,6 +3,7 @@
 @using Coactivos_Predial.Shared.Components
 @using Coactivos_Predial.Shared.Models
 @using Coactivos_Predial.Shared.Services.SCoactivos;
+@using Coactivos_Predial.Shared.Services.SCoactivos.Responses;
 @inject NavigationManager NavigationManager;
 @inject BusquedaService busquedaService;
 @inject IJSRuntime JSRuntime
@@ -120,12 +121,12 @@
 															@foreach (var item in Itemper)
 															{
 																<tr>
-																	<td>@item.codigo</td>
-																	<td>@item.fecha.ToString("dd/MM/yyyy")</td>
-																	<td>@item.cedula</td>
-																	<td>@item.pnombres</td>
-																	<td>@item.resolucion</td>
-																	<td class="text-end">@item.valor.ToString("C")</td>
+																	<td>@item.Codigo</td>
+																	<td>@item.Fecha.ToString("dd/MM/yyyy")</td>
+																	<td>@item.Cedula</td>
+																	<td>@item.PrimerosNombres</td>
+																	<td>@item.Resolucion</td>
+																	<td class="text-end">@item.Valor.ToString("C")</td>
 																	<td></td>
 																</tr>
 															}
@@ -184,13 +185,13 @@
 															@foreach (var item in Itemlist)
 															{
 																<tr>
-																	<td>@item.codigo</td>
-																	<td>@item.fecha.ToString("dd/MM/yyyy")</td>
-																	<td>@item.cedula</td>
-																	<td>@item.pnombres</td>
-																	<td>@item.resolucion</td>
-																	<td>@item.fecha_mdto.ToString("dd/MM/yyyy")</td>
-																	<td class="text-end">@item.valor.ToString("C")</td>
+																	<td>@item.Codigo</td>
+																	<td>@item.Fecha.ToString("dd/MM/yyyy")</td>
+																	<td>@item.Cedula</td>
+																	<td>@item.PrimerosNombres</td>
+																	<td>@item.Resolucion</td>
+																	<td>@item.FechaMandamiento.ToString("dd/MM/yyyy")</td>
+																	<td class="text-end">@item.Valor.ToString("C")</td>
 																	<td></td>
 																</tr>
 															}
@@ -246,8 +247,8 @@
 									{
 										var isSelected = selectedtranItem == tranItem;
 										<tr class="@(isSelected ? "table-primary" : "")" style="cursor: pointer;" @onclick="() => SeleccionarTranItem(tranItem)">
-											<td>@tranItem.transaccion</td>
-											<td>@tranItem.fecha.ToString("dd/MM/yyyy")</td>
+											<td>@tranItem.Transaccion</td>
+											<td>@tranItem.Fecha.ToString("dd/MM/yyyy")</td>
 											<td>@tranItem.No</td>
 											<td></td>
 										</tr>
@@ -319,11 +320,11 @@
 {
 	private bool mostrarModal = false;
 	private bool mostrarModalBusqueda = false;
-	public List<Coactivos> Itemlist { get; set; } = new List<Coactivos>();
-	public List<Coactivos> Itemper { get; set; } = new List<Coactivos>();
-	public List<Coactivos> comp_obj { get; set; } = new List<Coactivos>();
-	public List<Transac_Report> Tranlist { get; set; } = new List<Transac_Report>();
-	private Transac_Report? selectedtranItem;
+	public List<CoactivoDto> Itemlist { get; set; } = new List<CoactivoDto>();
+	public List<CoactivoDto> Itemper { get; set; } = new List<CoactivoDto>();
+	public List<CoactivoDto> comp_obj { get; set; } = new List<CoactivoDto>();
+	public List<TransaccionReporteDto> Tranlist { get; set; } = new List<TransaccionReporteDto>();
+	private TransaccionReporteDto? selectedtranItem;
 
 	public DateTime desde;
 	public DateTime hasta;
@@ -361,12 +362,17 @@
 	private async Task Muestra_tran()
 	{
 		await ShowLoading();
-		Tranlist = await coactivoServices.GetListtran("3", 0);
+		var resultado = await coactivoServices.GetListtran("3", 0);
+		Tranlist = resultado.Value ?? new List<TransaccionReporteDto>();
+		if (resultado.IsFailure)
+		{
+			Console.WriteLine($"Error al consultar transacciones: {resultado.Error}");
+		}
 		MostrarModal();
 		StateHasChanged();
 	}
 
-	private void SeleccionarTranItem(Transac_Report item)
+	private void SeleccionarTranItem(TransaccionReporteDto item)
 	{
 		selectedtranItem = item;
 	}
@@ -377,7 +383,7 @@
 		{
 			if (selectedtranItem != null)
 			{
-				tran = selectedtranItem.transaccion;
+				tran = selectedtranItem.Transaccion;
 				mostrarModal = false;
 				StateHasChanged();
 			}
@@ -504,7 +510,12 @@
 			}
 			if (tab2)
 			{
-				Itemlist = await coactivoServices.Lista_Coactivos(SelectedItem, pcomp, vig, 0, 2);
+				var resultado = await coactivoServices.Lista_Coactivos(SelectedItem, pcomp, vig, 0, 2);
+				Itemlist = resultado.Value ?? new List<CoactivoDto>();
+				if (resultado.IsFailure)
+				{
+					Console.WriteLine($"Error: {resultado.Error}");
+				}
 			}
 		}
 		catch (Exception ex)
@@ -517,7 +528,7 @@
 	{
 		try
 		{
-			string result = busquedaService.ObtenerUltimoComparendoCapturado();
+			string result = busquedaService.ObtenerUltimoCodigoSeleccionado();
 			pcomp = result;
 			Console.WriteLine($"result es: {result}");
 		}

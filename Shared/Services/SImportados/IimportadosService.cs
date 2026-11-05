@@ -1,18 +1,20 @@
-﻿using Coactivos_Predial.Models;
 using Coactivos_Predial.Shared.Models;
+using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.SImportados.Responses;
 
-namespace Coactivos_Predial.Shared.Services.SImportados
+namespace Coactivos_Predial.Shared.Services.SImportados;
+
+public interface IimportadosService
 {
-    public interface IimportadosService
-    {
-        Task<int> Add(Importados import_obj);
+    Task<Result> Add(Importados import_obj);
 
-        Task<List<Importados>> GetList();
+    Task<Result<List<ImportadoDto>>> GetList();
 
-        Task<int> DeleteAll();
-        Task<int> DeleteRec();
-        Task<int> Procesa_Comp(int puser);
-        
-        Task<int> Procesa_Rec(int puser);
-    }
+    Task<Result> DeleteAll();
+
+    Task<Result> DeleteRec();
+
+    Task<Result> Procesa_Comp(int puser);
+
+    Task<Result> Procesa_Rec(int puser);
 }

@@ -5,6 +5,8 @@
 @using Coactivos_Predial.Shared.Services;
 @using Coactivos_Predial.Shared.Services.SCoactivos;
 @using Coactivos_Predial.Shared.Services.Spersuasivo;
+@using Coactivos_Predial.Shared.Services.Spersuasivo.Responses;
+@using Coactivos_Predial.Shared.Services.SCoactivos.Responses;
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @inject BusquedaService busquedaService
@@ -135,11 +137,11 @@
                                                 @foreach (var item in Itemlist)
                                                 {
                                                     <tr>
-                                                        <td>@item.comparendo</td>
-                                                        <td>@item.fecha.ToString("dd/MM/yyyy")</td>
-                                                        <td>@item.cedula</td>
-                                                        <td>@item.nombres</td>
-                                                        <td>@item.valor.ToString("C")</td>
+                                                        <td>@item.Comparendo</td>
+                                                        <td>@item.Fecha.ToString("dd/MM/yyyy")</td>
+                                                        <td>@item.Cedula</td>
+                                                        <td>@item.Nombres</td>
+                                                        <td>@item.Valor.ToString("C")</td>
                                                         <td></td>
                                                     </tr>
                                                 }
@@ -190,8 +192,8 @@
                                     {
                                         var isSelected = selectedtranItem == tranItem;
                                         <tr class="@(isSelected ? "table-primary" : "")" style="cursor: pointer;" @onclick="() => SeleccionarTranItem(tranItem)">
-                                            <td>@tranItem.transaccion</td>
-                                            <td>@tranItem.fecha.ToString("dd/MM/yyyy")</td>
+                                            <td>@tranItem.Transaccion</td>
+                                            <td>@tranItem.Fecha.ToString("dd/MM/yyyy")</td>
                                             <td>@tranItem.No</td>
                                             <td></td>
                                         </tr>
@@ -244,9 +246,9 @@
 
 @code
 {
-    public List<Persuasivos> Itemlist { get; set; } = new List<Persuasivos>();
-    public List<Transac_Report> Tranlist { get; set; } = new List<Transac_Report>();
-    private Transac_Report selectedtranItem;
+    public List<PersuasivoDto> Itemlist { get; set; } = new List<PersuasivoDto>();
+    public List<TransaccionReporteDto> Tranlist { get; set; } = new List<TransaccionReporteDto>();
+    private TransaccionReporteDto? selectedtranItem;
 
     public DateTime desde;
     public DateTime hasta;
@@ -279,7 +281,7 @@
         StateHasChanged();
     }
 
-    private void SeleccionarTranItem(Transac_Report item)
+    private void SeleccionarTranItem(TransaccionReporteDto item)
     {
         selectedtranItem = item;
     }
@@ -290,7 +292,7 @@
         {
             if (selectedtranItem != null)
             {
-                tran = selectedtranItem.transaccion;
+                tran = selectedtranItem.Transaccion;
                 mostrarModal = false;
                 StateHasChanged();
             }
@@ -339,7 +341,12 @@
         try
         {
             await ShowLoading();
-            Itemlist = await PersuasivoServices.GetList(SelectedItem, pcomp, desde, hasta, vig, tran);
+            var resultado = await PersuasivoServices.GetList(SelectedItem, pcomp, desde, hasta, vig, tran);
+            Itemlist = resultado.Value ?? new List<PersuasivoDto>();
+            if (resultado.IsFailure)
+            {
+                Console.WriteLine($"Error en getresoluciones: {resultado.Error}");
+            }
         }
         catch (Exception ex)
         {
@@ -356,8 +363,15 @@
             {
                 bot = true;
                 StateHasChanged();
-                await PersuasivoServices.Procesa_Per(SelectedItem, pcomp, desde, hasta, vig, tran);
-                await JSRuntime.InvokeVoidAsync("alert", "Archivo Procesado.");
+                var resultado = await PersuasivoServices.Procesa_Per(SelectedItem, pcomp, desde, hasta, vig, tran);
+                if (resultado.IsSuccess)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Archivo Procesado.");
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", resultado.Error ?? "No fue posible procesar el persuasivo.");
+                }
                 bot = false;
                 StateHasChanged();
             }
@@ -374,7 +388,7 @@
     {
         try
         {
-            string result = busquedaService.ObtenerUltimoComparendoCapturado();
+            string result = busquedaService.ObtenerUltimoCodigoSeleccionado();
             pcomp = result;
         }
         catch (Exception ex)

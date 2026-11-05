@@ -2,6 +2,7 @@
 
 @using Coactivos_Predial.Models;
 @using Coactivos_Predial.Shared.Services.SParametros;
+@using Coactivos_Predial.Shared.Services.SParametros.Responses;
 @using System.Reflection;
 @inject IJSRuntime JSRuntime
 @inject IParametroService ParametroService;
@@ -37,13 +38,13 @@
                                         <div class="col-sm-5">
                                             <div class="form-group">
                                                 <label style="font-size:12px">Secretaría</label>
-                                                <input type="text" maxlength="80" class="form-control col-md-7 col-auto" style="font-weight: bold;" @bind="param_obj.nombre">
+                                                <input type="text" maxlength="80" class="form-control col-md-7 col-auto" style="font-weight: bold;" @bind="param_obj.Nombre">
                                             </div>
                                         </div>
                                         <div class="col-sm-5">
                                             <div class="form-group">
                                                 <label style="font-size:12px">Ciudad</label>
-                                                <input type="text" maxlength="40" class="form-control" @bind="param_obj.ciudad">
+                                                <input type="text" maxlength="40" class="form-control" @bind="param_obj.Ciudad">
                                             </div>
                                         </div>
                                     </div>
@@ -51,19 +52,19 @@
                                         <div class="col-sm-4">
                                             <div class="form-group">
                                                 <label style="font-size:12px">Dirección</label>
-                                                <input type="text" maxlength="60" @bind="param_obj.dir" class="form-control col-auto">
+                                                <input type="text" maxlength="60" @bind="param_obj.Direccion" class="form-control col-auto">
                                             </div>
                                         </div>
                                         <div class="col-sm-4">
                                             <div class="form-group">
                                                 <label style="font-size:12px">Nit</label>
-                                                <input type="text" maxlength="15" @bind="param_obj.nit" class="form-control col-auto">
+                                                <input type="text" maxlength="15" @bind="param_obj.Nit" class="form-control col-auto">
                                             </div>
                                         </div>
                                         <div class="col-sm-4">
                                             <div class="form-group">
                                                 <label style="font-size:12px">Correo</label>
-                                                <input type="text" maxlength="60" @bind="param_obj.correo" class="form-control">
+                                                <input type="text" maxlength="60" @bind="param_obj.Correo" class="form-control">
                                             </div>
                                         </div>
                                     </div>
@@ -71,7 +72,7 @@
                                         <div class="col-sm-4">
                                             <div class="form-group">
                                                 <label style="font-size:12px">Teléfono</label>
-                                                <input type="text" maxlength="15" @bind="param_obj.tel" class="form-control">
+                                                <input type="text" maxlength="15" @bind="param_obj.Telefono" class="form-control">
                                             </div>
                                         </div>
                                     </div>
@@ -88,7 +89,7 @@
                                 <div class="row mb-2">
                                     <div class="col-sm-4">
                                         <div class="form-check">
-                                            <input class="form-check-input" @bind="param_obj.cobra_adicional" type="checkbox">
+                                            <input class="form-check-input" @bind="param_obj.CobraAdicional" type="checkbox">
                                             <label style="font-size:12px" class="form-check-label">Cobra Valor Adicional</label>
                                         </div>
                                     </div>
@@ -152,7 +153,7 @@
                         <div class="row bg-transparent">
                             <div class="col-auto">
                                 <button type="button" style="font-size:12px; border-radius:15px;" @onclick="Editparm" class="btn btn-dark">Guardar</button>
-                                <input type="hidden" @bind="param_obj.id" id="lId" />
+                                <input type="hidden" @bind="param_obj.Id" id="lId" />
                             </div>
                             <div class="col-auto ms-2">
                                 <a href="/Principal" style="font-size:12px; border-radius:15px;" class="btn btn-primary">Cerrar</a>
@@ -227,40 +228,38 @@
     private bool tab5 = false;
     public bool isLoading;
     private bool esModoEditar = false;
-    private Estados_proc agentesobj = new Estados_proc();
-    private List<Estados_proc> estados_list { get; set; }
-    IQueryable<Estados_proc> data;
+    private EstadoProcesoDto agentesobj = new();
+    private List<EstadoProcesoDto> estados_list { get; set; } = new();
+    IQueryable<EstadoProcesoDto> data;
 
-    public Parametros param_obj { get; set; } = new Parametros();
+    public ParametroDto param_obj { get; set; } = new();
     public string errorMessage { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await getparametros();
 
-        estados_list = await ParametroService.Getlist();
-        if (estados_list != null)
-        {
-            data = estados_list.AsQueryable();
-        }
+        var estadosResult = await ParametroService.Getlist();
+        estados_list = estadosResult.Value ?? new List<EstadoProcesoDto>();
+        data = estados_list.AsQueryable();
     }
 
-    private async Task Actualizar(Estados_proc agentes)
+    private async Task Actualizar(EstadoProcesoDto agentes)
     {
-        var count = await ParametroService.EditEstados(agentes);
+        var resultado = await ParametroService.EditEstados(agentes);
 
-        if (count > 0)
+        if (resultado.IsSuccess)
         {
             mostrarModal1 = false;
             StateHasChanged();
         }
         else
         {
-            Console.WriteLine("Error al actualizar el estado.");
+            Console.WriteLine($"Error al actualizar el estado: {resultado.Error}");
         }
     }
 
-    void Editar(Estados_proc agentes)
+    void Editar(EstadoProcesoDto agentes)
     {
         agentesobj = agentes;
         esModoEditar = true;
@@ -272,14 +271,9 @@
         try
         {
             var parametrosResponse = await ParametroService.GetParametroById(1);
-            if (parametrosResponse != null)
-            {
-                param_obj = parametrosResponse;
-            }
-            else
-            {
-                param_obj = new Parametros();
-            }
+            param_obj = parametrosResponse.IsSuccess && parametrosResponse.Value is not null
+                ? parametrosResponse.Value
+                : new ParametroDto();
         }
         catch (Exception ex)
         {
@@ -310,14 +304,14 @@
     {
         if (IsValid(param_obj))
         {
-            try
+            var resultado = await ParametroService.EditParametros(1, param_obj);
+            if (resultado.IsSuccess)
             {
-                await ParametroService.EditParametros(1, param_obj);
                 await JSRuntime.InvokeVoidAsync("alert", "Información Actualizada.");
             }
-            catch (Exception ex)
+            else
             {
-                errorMessage = $"Error al actualizar parámetros: {ex.Message}";
+                errorMessage = resultado.Error ?? "No fue posible actualizar los parámetros.";
                 await JSRuntime.InvokeVoidAsync("alert", errorMessage);
             }
         }
@@ -340,11 +334,11 @@
 
         if (!esModoEditar)
         {
-            agentesobj = new Estados_proc();
+            agentesobj = new EstadoProcesoDto();
         }
     }
 
-    private bool IsValid(Parametros param_obj)
+    private bool IsValid(ParametroDto param_obj)
     {
         PropertyInfo[] properties = param_obj.GetType().GetProperties();
         List<string> propertiesToValidate = new List<string>

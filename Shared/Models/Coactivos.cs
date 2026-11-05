@@ -1,25 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Coactivos_Predial.Shared.Models;
+
+/// <summary>
+/// Proyección Dapper de la base municipal anterior; no forma una tabla del contexto code-first.
+/// </summary>
 public class Coactivos
 {
-    [Required]
     [Key]
-    public int id { get; set; }
-    public string? codigo { get; set; }
-    public string? cedula { get; set; }
-    public string? resolucion { get; set; }
-    public string? pnombres { get; set; }
-    public string? dir { get; set; }
-    public int desde { get; set; }
-    public int hasta { get; set; }
-    public int sem1 { get; set; }
-    public int sem2 { get; set; }
-    public DateOnly fecha { get; set; }
-    public DateOnly fecha_sancion { get; set; }
-    public DateOnly fecha_mdto { get; set; }
-    public DateOnly fecha_proceso { get; set; }
-    public double valor { get; set; }
+    public int Id { get; set; }
 
+    public string? Codigo { get; set; }
+    public string? Cedula { get; set; }
+    public string? Resolucion { get; set; }
+    public string? PrimerosNombres { get; set; }
+    public string? Direccion { get; set; }
+    public DateTime Desde { get; set; }
+    public DateTime Hasta { get; set; }
+    public int SemestreUno { get; set; }
+    public int SemestreDos { get; set; }
+    public DateTime Fecha { get; set; }
+    public DateTime FechaSancion { get; set; }
+    public DateTime FechaMandamiento { get; set; }
+    public DateTime FechaProceso { get; set; }
+    public double Valor { get; set; }
 }
-
