@@ -1,16 +1,35 @@
-﻿namespace Coactivos_Predial.Shared.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Coactivos_Predial.Shared.Models;
+
+[Table("Documentos")]
+public class Documentos
 {
-    public class Documentos
-    {
-        public int id { get; set; }
+    [Column("Id")]
+    public int Id { get; set; }
 
-        public string codigo_predial { get; set; }
-        public string nombre { get; set; }
-        
-        public DateOnly fecha { get; set; }
+    [Column("TipoDocumentoId")]
+    public int TipoDocumentoId { get; set; }
 
-        public  string archivo { get; set; }
+    [Column("PredioId")]
+    public int? PredioId { get; set; }
 
-        public int num { get; set; }
-    }
+    [Column("CodigoPredial")]
+    public string CodigoPredial { get; set; } = string.Empty;
+
+    [Column("Nombre")]
+    public string Nombre { get; set; } = string.Empty;
+
+    [Column("Fecha", TypeName = "date")]
+    public DateTime Fecha { get; set; }
+
+    [Column("Ruta")]
+    public string Ruta { get; set; } = string.Empty;
+
+    [Column("Archivo")]
+    public string Archivo { get; set; } = string.Empty;
+
+    [ForeignKey(nameof(TipoDocumentoId))]
+    public TipoDocumento TipoDocumento { get; set; } = null!;
+
 }

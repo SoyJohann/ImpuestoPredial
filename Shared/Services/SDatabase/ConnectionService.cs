@@ -23,17 +23,56 @@ namespace Coactivos_Predial.Shared.Services.SDatabase
 
         public string GetStorageString(string filestorage)
         {
-            return GetStorageStringForMunicipio(_tenantProvider.Municipio);
+            return GetStorageStringForSector("PREDIAL");
+        }
+
+        public string GetStorageStringForSector(string? sectorCode)
+        {
+            return GetStorageStringForMunicipio(_tenantProvider.Municipio, sectorCode);
         }
 
         public string GetStorageStringForMunicipio(string? municipio)
         {
-            var template = _configuration["FileStorageTemplate"] ?? string.Empty;
-            if (!string.IsNullOrEmpty(municipio))
+            return GetStorageStringForMunicipio(municipio, "PREDIAL");
+        }
+
+        public string GetStorageStringForMunicipio(string? municipio, string? sectorCode)
+        {
+            if (string.IsNullOrWhiteSpace(municipio)
+                || municipio is "." or ".."
+                || municipio.Contains('/')
+                || municipio.Contains('\\'))
             {
-                template = template.Replace("{Predial}", municipio).Replace("{Database}", municipio);
+                return string.Empty;
             }
-            return template;
+
+            var sectorFolder = sectorCode?.Trim().ToUpperInvariant() switch
+            {
+                "PREDIAL" => "Predial",
+                "INDUSTRIA_COMERCIO" => "IndustriaComercio",
+                _ => null
+            };
+            if (sectorFolder is null) return string.Empty;
+
+            var municipalityFolder = municipio.Trim();
+            const string predialDatabasePrefix = "Predial_";
+            if (municipalityFolder.StartsWith(predialDatabasePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                municipalityFolder = municipalityFolder[predialDatabasePrefix.Length..];
+            }
+            if (string.IsNullOrWhiteSpace(municipalityFolder)
+                || municipalityFolder is "." or ".."
+                || municipalityFolder.Contains('/')
+                || municipalityFolder.Contains('\\'))
+            {
+                return string.Empty;
+            }
+
+            var template = _configuration["FileStorageTemplate"] ?? string.Empty;
+            return template
+                .Replace("{Municipio}", municipalityFolder, StringComparison.Ordinal)
+                .Replace("{Database}", municipalityFolder, StringComparison.Ordinal)
+                .Replace("{Sector}", sectorFolder, StringComparison.Ordinal);
         }
     }
 }

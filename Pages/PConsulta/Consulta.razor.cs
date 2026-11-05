@@ -15,19 +15,20 @@ public partial class Consulta
     private List<Documentos> listDocs = new List<Documentos>();
     private string filtroDocumentos = string.Empty;
     private PdfViewerModal? pdfViewerModal;
+
     private IEnumerable<Documentos> DocumentosFiltrados => string.IsNullOrWhiteSpace(filtroDocumentos)
         ? listDocs
-        : listDocs.Where(doc => (doc.nombre ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase)
-            || (doc.archivo ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase));
+        : listDocs.Where(doc =>
+            (doc.Nombre ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase)
+            || (doc.Ruta ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase));
+
     private Documentos Docsobj = new Documentos();
     public List<Archivo> archivo = new();
     private List<IBrowserFile> loadedFiles = new();
 
     private long maxFileSize = 1024 * 1024 * 4;
-    private int MaxAllowedFiles = 1;
     private List<string> errors = new();
     public string nombreArchivo = "NumeroComparendo";
-    public string rutaparaarchivo;
 
     IQueryable<Procesos> datap;
     IQueryable<Documentos> datacon;
@@ -42,6 +43,11 @@ public partial class Consulta
     public string nentidad;
     public string nestado;
     private string error;
+    private bool busquedaRealizada;
+    private string? errorBusqueda;
+    private string? aviso;
+    private bool subiendo;
+    private bool mostrarModalSubir;
     public string nestado_proc = "";
     private bool mostrarModal;
     private bool tab1 = true;
@@ -57,26 +63,147 @@ public partial class Consulta
     private bool userHasAccess = false;
     private string requiredRole = "2";
 
+    private string DocumentosResumen => listDocs.Count == 0
+        ? "Sin documentos"
+        : $"{listDocs.Count} documento{(listDocs.Count == 1 ? "" : "s")}";
 
-    private async Task GetPdfs()
+    private string PropietariosResumen => propietlist.Count == 0
+        ? "Sin propietarios"
+        : $"{propietlist.Count} propietario{(propietlist.Count == 1 ? "" : "s")}";
+
+    private string CondicionVariant => comp_obj.exento ? "warn" : "ok";
+
+    private async Task Consultar()
     {
-        try
+        var codigoBuscado = comp_obj.codigo?.Trim();
+        if (string.IsNullOrWhiteSpace(codigoBuscado))
         {
-            listDocs = await comparendoService.GetPdfsByComp(comp_obj.codigo);
+            errorBusqueda = "Ingrese un código predial para consultar.";
+            busquedaRealizada = false;
+            return;
         }
-        catch (Exception ex)
+
+        comp_obj.codigo = codigoBuscado;
+        errorBusqueda = null;
+        busquedaRealizada = true;
+        await obtenerLiquidacion();
+
+        if (!existe)
         {
-            Console.WriteLine($"Error al obtener Conceptos:{ex}");
+            LimpiarCarga();
+            await getprop();
+            await getprocesos();
         }
     }
 
-
-    private async Task GetRuta_Pdf(InputFileChangeEventArgs e)
+    private async Task SeleccionarDesdeModal(string codigoCapturado)
     {
-        if (e != null && e.File != null)
+        errorBusqueda = null;
+        busquedaRealizada = true;
+        comp_obj.codigo = codigoCapturado;
+        mostrarModalBusqueda = false;
+        await obtenerLiquidacion();
+
+        if (!existe)
         {
-            var archivo = e.File;
-            Console.WriteLine($"Error in obtenerLiquidacion: {archivo.Name}");
+            LimpiarCarga();
+            await getprop();
+            await getprocesos();
+        }
+    }
+
+    private void LimpiarCarga()
+    {
+        Docsobj = new Documentos { CodigoPredial = comp_obj.codigo };
+        loadedFiles.Clear();
+        errors.Clear();
+        nombreArchivo = comp_obj.codigo;
+    }
+
+    private void AbrirModalSubir()
+    {
+        LimpiarCarga();
+        mostrarModalSubir = true;
+    }
+
+    private void CerrarModalSubir() => mostrarModalSubir = false;
+
+    private async Task ArchivoSeleccionado(InputFileChangeEventArgs e)
+    {
+        if (subiendo)
+        {
+            return;
+        }
+
+        Docsobj.CodigoPredial = comp_obj.codigo;
+        nombreArchivo = comp_obj.codigo;
+        await LoadFiles(e);
+    }
+
+    private async Task SubirDocumento()
+    {
+        // Evita que dos clics rápidos creen dos registros durante la primera petición.
+        if (subiendo || !ValidarDocumentoSeleccionado())
+        {
+            return;
+        }
+
+        Docsobj.CodigoPredial = comp_obj.codigo;
+        Docsobj.PredioId = comp_obj.id;
+        subiendo = true;
+        var documentosAntes = listDocs.Count;
+        await InvokeAsync(StateHasChanged);
+        await Task.Yield();
+
+        try
+        {
+            await Agregar_Pdf();
+        }
+        finally
+        {
+            subiendo = false;
+        }
+
+        if (listDocs.Count > documentosAntes)
+        {
+            Docsobj = new Documentos { CodigoPredial = comp_obj.codigo };
+            loadedFiles.Clear();
+            errors.Clear();
+            nombreArchivo = comp_obj.codigo;
+            mostrarModalSubir = false;
+            aviso = "Documento cargado correctamente.";
+        }
+
+        StateHasChanged();
+    }
+
+    private void CerrarAviso() => aviso = null;
+
+    private static string FechaTexto(DateOnly fecha) =>
+        fecha == default || fecha.Year <= 1 ? "—" : fecha.ToString("dd/MM/yyyy");
+
+    private static string FechaTexto(DateTime fecha) =>
+        fecha == default || fecha.Year <= 1 ? "—" : fecha.ToString("dd/MM/yyyy");
+
+
+    private async Task GetPdfs()
+    {
+        if (string.IsNullOrWhiteSpace(comp_obj.codigo))
+        {
+            listDocs.Clear();
+            return;
+        }
+
+        try
+        {
+            listDocs = await comparendoService.GetPdfsByComp(comp_obj.codigo.Trim());
+            Console.WriteLine($"Consulta de documentos para {comp_obj.codigo}: {listDocs.Count} resultado(s).");
+        }
+        catch (Exception ex)
+        {
+            listDocs.Clear();
+            errorBusqueda = "No fue posible consultar los documentos del predio.";
+            Console.WriteLine($"Error al consultar documentos del predio {comp_obj.codigo}: {ex}");
         }
     }
 
@@ -118,24 +245,24 @@ public partial class Consulta
         var docs = docPendienteEliminar;
 
         // Eliminar el documento de la base de datos
-        await comparendoService.DeleteDocs(docs.id);
+        await comparendoService.DeleteDocs(docs.Id);
 
         // Eliminar el archivo físico
         try
         {
-            if (File.Exists(docs.archivo))
+            if (File.Exists(docs.Ruta))
             {
-                File.Delete(docs.archivo);
-                Console.WriteLine($"Archivo {docs.archivo} eliminado correctamente.");
+                File.Delete(docs.Ruta);
+                Console.WriteLine($"Archivo {docs.Ruta} eliminado correctamente.");
             }
             else
             {
-                Console.WriteLine($"El archivo {docs.archivo} no existe.");
+                Console.WriteLine($"El archivo {docs.Ruta} no existe.");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error al eliminar el archivo {docs.archivo}: {ex.Message}");
+            Console.WriteLine($"Error al eliminar el archivo {docs.Ruta}: {ex.Message}");
         }
 
         docPendienteEliminar = null;
@@ -149,12 +276,13 @@ public partial class Consulta
 
     private async Task Agregar_Pdf()
     {
-        if (string.IsNullOrEmpty(Docsobj.nombre))
+        if (string.IsNullOrEmpty(Docsobj.Nombre))
         {
             await JSRuntime.InvokeVoidAsync("alert", "Por favor, ingresa el detalle del documento.");
             return;
         }
-        if (string.IsNullOrEmpty(Docsobj.archivo))
+
+        if (string.IsNullOrEmpty(Docsobj.Ruta))
         {
             await JSRuntime.InvokeVoidAsync("alert", "Por favor, escoja un documento a cargar.");
             return;
@@ -162,7 +290,7 @@ public partial class Consulta
 
         try
         {
-            var count = await comparendoService.Add_Docs(Docsobj);
+            var count = await comparendoService.AgregarDocumento(Docsobj);
 
             // Cerrar el modal
             mostrarModal = false;
@@ -194,7 +322,7 @@ public partial class Consulta
             foreach (var file in loadedFiles)
             {
                 string directoryPath = stringStorage;
-                string fullFilePath = Path.Combine(directoryPath, Docsobj.archivo);
+                string fullFilePath = Path.Combine(directoryPath, Docsobj.Ruta);
 
                 Console.WriteLine($"directoryPath en guardar en segundo plano: {directoryPath}");
 
@@ -217,20 +345,6 @@ public partial class Consulta
         }
     }
 
-
-    private async Task obtenercompare()
-    {
-        try
-        {
-            string result = busquedaService.ObtenerUltimoComparendoCapturado();
-            comp_obj.codigo = result;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error al asignar comparendo: {ex.Message}");
-        }
-    }
-
     private bool mostrarModalBusqueda = false;
 
     // 1. Mostrar el Modal
@@ -245,22 +359,6 @@ public partial class Consulta
         mostrarModalBusqueda = false;
     }
 
-    private async Task ComparendoSeleccionadoDesdeModal(string codigoCapturado)
-    {
-        comp_obj.codigo = codigoCapturado;
-        mostrarModalBusqueda = false;
-
-        await obtenerLiquidacion();
-        await getprop();
-        await getprocesos();
-    }
-
-
-    private async Task CerrarModalb()
-    {
-        mostrarModalBusqueda = false;
-    }
-
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -271,13 +369,19 @@ public partial class Consulta
         switch (TabNumber)
         {
             case 1:
-                this.tab1 = true; this.tab2 = false; this.tab3 = false;
+                this.tab1 = true;
+                this.tab2 = false;
+                this.tab3 = false;
                 break;
             case 2:
-                this.tab1 = false; this.tab2 = true; this.tab3 = false;
+                this.tab1 = false;
+                this.tab2 = true;
+                this.tab3 = false;
                 break;
             case 3:
-                this.tab1 = false; this.tab3 = true; this.tab2 = false;
+                this.tab1 = false;
+                this.tab3 = true;
+                this.tab2 = false;
                 break;
         }
     }
@@ -286,39 +390,44 @@ public partial class Consulta
     {
         try
         {
-            if (string.IsNullOrEmpty(comp_obj.codigo))
+            var codigoBuscado = comp_obj.codigo?.Trim();
+            if (string.IsNullOrEmpty(codigoBuscado))
             {
                 return;
             }
-            var result = await comparendoService.GetMultasByComp(comp_obj.codigo.Trim());
-            if (result != null)
+
+            var result = await comparendoService.GetPrediosByCode(codigoBuscado);
+            if (result is not null && !string.IsNullOrWhiteSpace(result.codigo))
             {
                 comp_obj = result;
                 if (comp_obj.exento)
-                { nentidad = "Exento"; }
-                else { nentidad = "Normal"; }
-//                if (comp_obj.estado == 1)
-  //              { nestado = "Pendiente Pago"; }
-    //            else { nestado = "Cancelado"; }
-                getprop(); existe = false;
+                {
+                    nentidad = "Exento";
+                }
+                else
+                {
+                    nentidad = "Normal";
+                }
+                existe = false;
                 await GetPdfs();
                 ptotalconrecFormated = (comp_obj.avaluo).ToString("C");
                 displayTabs(1);
             }
             else
             {
+                // GetMultasByComp históricamente devuelve un objeto vacío cuando no encuentra
+                // coincidencia o falla. Conservamos el código consultado para buscar sus PDFs.
+                comp_obj.codigo = codigoBuscado;
                 await GetPdfs();
-                existe = true;
-                comp_obj.nombre = ""; comp_obj.cedula = "";
-                comp_obj.area_tet = 0;
-                comp_obj.area_con = 0;
-                comp_obj.dir = ""; comp_obj.matricula = ""; comp_obj.zona = ""; comp_obj.estrato = "";
-                comp_obj.avaluo = 0;
+                // Los documentos pueden existir aunque la consulta complementaria de maestro
+                // no haya devuelto los datos del predio; en ese caso igual mostramos la lista.
+                existe = listDocs.Count == 0;
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error in obtenerLiquidacion: {ex.Message}");
+            errorBusqueda = "Ocurrió un error al consultar el predio y sus documentos.";
             existe = true;
         }
     }
@@ -333,8 +442,10 @@ public partial class Consulta
             nestado_proc = "Estado : Sin Proceso";
             foreach (var item in procesoslist)
             {
-                nestado_proc = item.nestado.Trim() + " Resol: " + item.resolucion.Trim() + " Del : " + FechaTexto(item.fecha_mdto);
+                nestado_proc = item.nestado.Trim() + " Resol: " + item.resolucion.Trim() + " Del : " +
+                               FechaTexto(item.fecha_mdto);
             }
+
             StateHasChanged();
         }
         catch (Exception ex)
@@ -363,56 +474,37 @@ public partial class Consulta
         await Task.Yield();
         isLoading = false;
     }
-
-    private void MostrarModal()
-    {
-        Docsobj = new Documentos();
-        Docsobj.codigo_predial = comp_obj.codigo;
-        nombreArchivo = comp_obj.codigo;
-        mostrarModal = true;
-        StateHasChanged();
-    }
-
-    private void CerrarModal()
-    {
-        mostrarModal = false;
-    }
-
+    
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
         try
         {
             errors.Clear();
-            if (e.FileCount > MaxAllowedFiles)
+            loadedFiles.Clear();
+            Docsobj.Ruta = string.Empty;
+
+            if (e.FileCount != 1)
             {
-                errors.Add($"Supera la cantidad permitida: {MaxAllowedFiles}");
+                errors.Add("Seleccione un solo archivo PDF.");
                 return;
             }
-            loadedFiles.Clear();
-            foreach (var file in e.GetMultipleFiles(MaxAllowedFiles))
+
+            var file = e.File;
+            if (!string.Equals(Path.GetExtension(file.Name), ".pdf", StringComparison.OrdinalIgnoreCase))
             {
-                try
-                {
-                    string originalFileName = Path.GetFileNameWithoutExtension(file.Name);
-                    Console.WriteLine($"Original File Name: {originalFileName}");
-
-                    string extension = Path.GetExtension(file.Name);
-                    Console.WriteLine($"Extension: {extension}");
-
-                    string newFileName = $"{nombreArchivo}_{originalFileName}{extension}";
-                    Console.WriteLine($"New File Name: {newFileName}");
-
-                    Docsobj.archivo = newFileName;
-
-                    loadedFiles.Add(file);
-                    Console.WriteLine($"File {file.Name} added to loadedFiles.");
-                }
-                catch (Exception ex)
-                {
-                    errors.Add($"{file.Name} error: {ex.Message}");
-                    Console.WriteLine($"Error processing file {file.Name}: {ex.Message}");
-                }
+                errors.Add("El archivo debe tener extensión .pdf.");
+                return;
             }
+
+            if (file.Size <= 0 || file.Size > maxFileSize)
+            {
+                errors.Add("El PDF debe pesar más de 0 y hasta 4 MB.");
+                return;
+            }
+
+            var originalFileName = Path.GetFileNameWithoutExtension(file.Name);
+            Docsobj.Ruta = $"{nombreArchivo}_{originalFileName}.pdf";
+            loadedFiles.Add(file);
         }
         catch (Exception ex)
         {
@@ -421,28 +513,29 @@ public partial class Consulta
         }
     }
 
-    public async Task GetArchivos()
+    private bool ValidarDocumentoSeleccionado()
     {
-        try
-        {
-            Console.WriteLine($"el nombre del archivo{nombreArchivo}");
-            var result = await _archivoService.GetFiles(nombreArchivo);
+        errors.Clear();
 
-            if (result == null)
-            {
-                Console.WriteLine("No encontrado");
-            }
-            else
-            {
-                archivo = result;
-            }
-        }
-        catch (Exception ex)
+        if (string.IsNullOrWhiteSpace(Docsobj.Nombre))
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            errors.Add("Ingrese el detalle del documento.");
         }
+
+        if (loadedFiles.Count != 1
+            || string.IsNullOrWhiteSpace(Docsobj.Ruta)
+            || !string.Equals(Path.GetExtension(Docsobj.Ruta), ".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add("Seleccione un solo archivo con extensión .pdf.");
+        }
+        else if (loadedFiles[0].Size <= 0 || loadedFiles[0].Size > maxFileSize)
+        {
+            errors.Add("El PDF debe pesar más de 0 y hasta 4 MB.");
+        }
+
+        return errors.Count == 0;
     }
-
+    
     private async Task AbrirPdf(int documentId)
     {
         var links = await DocumentoLinkService.GetLinksAsync(documentId);
@@ -451,6 +544,7 @@ public partial class Consulta
             await JSRuntime.InvokeVoidAsync("alert", "No se pudo validar el acceso al documento.");
             return;
         }
+
         if (pdfViewerModal is not null) await pdfViewerModal.OpenAsync(links.ViewUrl, links.DownloadUrl);
     }
 }

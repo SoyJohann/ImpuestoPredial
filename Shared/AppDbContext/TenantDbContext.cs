@@ -12,6 +12,9 @@ namespace Coactivos_Predial.Shared.AppDbContext
         public DbSet<Propietarios>? propietarios { get; set; }
         public DbSet<Parametros>? parametros { get; set; }
         public DbSet<Importados>? importados { get; set; }
+        public DbSet<Documentos>? Documentos { get; set; }
+        public DbSet<Sectores>? Sectores { get; set; }
+        public DbSet<TipoDocumento>? TiposDocumento { get; set; }
 
         public TenantDbContext(DbContextOptions<TenantDbContext> options) : base(options)
         {

@@ -1,4 +1,5 @@
 ﻿using Coactivos_Predial.Models;
+using Coactivos_Predial.Shared.Models;
 
 namespace Coactivos_Predial.Shared.Services.SPropietarios
 {

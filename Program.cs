@@ -5,6 +5,7 @@ using Coactivos_Predial.Shared.AppDbContext;
 using Coactivos_Predial.Shared.Components;
 using Coactivos_Predial.Shared.Services;
 using Coactivos_Predial.Shared.Services.DapperHandler;
+using Coactivos_Predial.Shared.Services.Document;
 using Coactivos_Predial.Shared.Services.FileHandler;
 using Coactivos_Predial.Shared.Services.FontResolver;
 using Coactivos_Predial.Shared.Services.SCoactivos;
@@ -14,6 +15,7 @@ using Coactivos_Predial.Shared.Services.SImportados;
 using Coactivos_Predial.Shared.Services.SLogin;
 using Coactivos_Predial.Shared.Services.SParametros;
 using Coactivos_Predial.Shared.Services.Spersuasivo;
+using Coactivos_Predial.Shared.Services.SPredios;
 using Coactivos_Predial.Shared.Services.SPropietarios;
 using Coactivos_Predial.Shared.Services.SUser;
 using Coactivos_Predial.Shared.Services.UserAccesor;
@@ -128,6 +130,20 @@ app.UseStaticFiles(DocumentoEndpoints.PdfJsStaticFileOptions());
 app.UseAuthentication();
 app.UseAntiforgery();
 app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api") && context.User.Identity?.IsAuthenticated == true)
+    {
+        var tenant = context.RequestServices.GetRequiredService<ITenantProvider>();
+        await tenant.InitializeAsync();
+        if (tenant.Municipio is null)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+    }
+    await next();
+});
 app.MapRazorPages();
 app.MapControllers();
 app.MapDocumentoEndpoints();

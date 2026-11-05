@@ -1,22 +1,22 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Dapper;
-using Npgsql;
 using Coactivos_Predial.Models;
+using Coactivos_Predial.Shared.AppDbContext;
 using Coactivos_Predial.Shared.Models;
 using Coactivos_Predial.Shared.Services.SDatabase;
+using Dapper;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
-namespace Coactivos_Predial.Shared.Services
+namespace Coactivos_Predial.Shared.Services.SPredios
 {
     public class PrediosService : IPrediosService
     {
         private readonly ITenantConnectionFactory _connFactory;
+        private readonly TenantDbContext _tenantDbContext;
 
-        public PrediosService(ITenantConnectionFactory connFactory)
+        public PrediosService(ITenantConnectionFactory connFactory, TenantDbContext tenantDbContext)
         {
             _connFactory = connFactory;
+            _tenantDbContext = tenantDbContext;
         }
 
         public async Task<List<Predios>> GetAll()
@@ -42,7 +42,7 @@ namespace Coactivos_Predial.Shared.Services
             return resoluciones;
         }
 
-        public async Task<Predios> GetMultasByComp(string comp)
+        public async Task<Predios> GetPrediosByCode(string comp)
         {
             await using var con = await _connFactory.CreateOpenAsync();
             try
@@ -56,43 +56,70 @@ namespace Coactivos_Predial.Shared.Services
                 return new Predios();
             }
         }
-
-        public async Task<List<Predios>> GetComparendosByCedula(string cedula)
-        {
-            await using var con = await _connFactory.CreateOpenAsync();
-            var query = "SELECT c.*,s_nulo(x.apellidos)||' '||s_nulo(x.nombre) as nombre_inf FROM comparendos c inner join infractores x on " +
-                "(x.cedula=c.cedula and x.tipo_ident=c.tipo_id) where c.cedula like @cedula limit 15";
-            return (await con.QueryAsync<Predios>(query, new { cedula = cedula + "%" })).ToList();
-        }
-
+        
         public async Task<List<Documentos>> GetPdfsByComp(string comp)
         {
-            await using var con = await _connFactory.CreateOpenAsync();
-            var query = "select * from muestra_pdfs(@comp)";
-            return (await con.QueryAsync<Documentos>(query, new { comp })).ToList();
+            var codigoPredial = comp.Trim();
+            return await _tenantDbContext.Documentos!
+                .AsNoTracking()
+                .Where(documento => documento.CodigoPredial.Trim() == codigoPredial)
+                .OrderBy(documento => documento.Id)
+                .ToListAsync();
         }
 
         public async Task<int> DeleteDocs(int id)
         {
             await using var con = await _connFactory.CreateOpenAsync();
-            var query = "DELETE FROM documentos WHERE id = @id";
+            var query = "DELETE FROM \"Documentos\" WHERE \"Id\" = @id";
             return await con.ExecuteAsync(query, new { id });
         }
 
-        public async Task<int> Add_Docs(Documentos docs_obj)
+        public async Task<int> AgregarDocumento(Documentos documento)
         {
-            await using var con = await _connFactory.CreateOpenAsync();
-            var query = "INSERT INTO documentos(codigo_predial,nombre,fecha,archivo) values (@codigo_predial,@nombre,@fecha,@archivo);";
-            return await con.ExecuteAsync(query, docs_obj);
+            ArgumentNullException.ThrowIfNull(documento);
+            ArgumentException.ThrowIfNullOrWhiteSpace(documento.CodigoPredial);
+            ArgumentException.ThrowIfNullOrWhiteSpace(documento.Nombre);
+            ArgumentException.ThrowIfNullOrWhiteSpace(documento.Ruta);
+
+            var codigoPredial = documento.CodigoPredial.Trim();
+            if (documento.PredioId is null or <= 0)
+            {
+                throw new InvalidOperationException("Consulte un predio antes de agregarle un documento.");
+            }
+
+            if (!string.Equals(Path.GetExtension(documento.Ruta), ".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("El documento debe ser un archivo PDF.", nameof(documento));
+            }
+
+            var tipoDocumentoId = await _tenantDbContext.TiposDocumento!
+                .AsNoTracking()
+                .Where(tipo => tipo.Codigo == "POR_CLASIFICAR" && tipo.Sector.Codigo == "PREDIAL")
+                .Select(tipo => tipo.Id)
+                .SingleOrDefaultAsync();
+
+            if (tipoDocumentoId <= 0)
+            {
+                throw new InvalidOperationException("No está configurado el tipo documental Predial por clasificar.");
+            }
+
+            documento.CodigoPredial = codigoPredial;
+            documento.TipoDocumentoId = tipoDocumentoId;
+            documento.Fecha = documento.Fecha == default ? DateTime.Today : documento.Fecha;
+            documento.Archivo = documento.Ruta;
+
+            await _tenantDbContext.Documentos!.AddAsync(documento);
+            return await _tenantDbContext.SaveChangesAsync();
         }
 
-        public async Task<List<Documentos>> Lista_Diario(DateTime pdesde, DateTime phasta)
+        public async Task<List<DocumentoPredial>> Lista_Diario(DateTime pdesde, DateTime phasta)
         {
             await using var con = await _connFactory.CreateOpenAsync();
             try
             {
-                var query = "select * from pdfs_cargados(@pdesde, @phasta)";
-                return (await con.QueryAsync<Documentos>(query, new { pdesde, phasta })).ToList();
+                var query = "select num as \"Num\", codigo_predial as \"CodigoPredial\", fecha as \"Fecha\" " +
+                            "from pdfs_cargados(@pdesde, @phasta)";
+                return (await con.QueryAsync<DocumentoPredial>(query, new { pdesde, phasta })).ToList();
             }
             catch (Exception ex)
             {

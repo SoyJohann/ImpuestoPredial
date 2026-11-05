@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations;
-using Microsoft.JSInterop;
-using Coactivos_Predial.Shared.Services.SPropietarios;
+﻿using System.ComponentModel.DataAnnotations;
 using Coactivos_Predial.Shared.Services.SPropietarios;
 
-namespace Coactivos_Predial.Models
+namespace Coactivos_Predial.Shared.Models
 {
     public class Propietarios
     {

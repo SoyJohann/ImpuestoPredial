@@ -4,6 +4,7 @@
 @using Coactivos_Predial.Shared.Models;
 @using Coactivos_Predial.Shared.Services;
 @using System.Diagnostics
+@using Coactivos_Predial.Shared.Services.SPredios
 @inject NavigationManager NavigationManager
 @inject IPrediosService Rep_resolServices;
 
@@ -94,10 +95,10 @@
                             @foreach (var doc in Itemlist)
                             {
                                 <tr>
-                                    <td class="fw-bold">@doc.codigo_predial</td>
-                                    <td>@doc.fecha.ToString("dd/MM/yyyy")</td>
+                                    <td class="fw-bold">@doc.CodigoPredial</td>
+                                    <td>@doc.Fecha.ToString("dd/MM/yyyy")</td>
                                     <td class="text-center">
-                                        <span class="badge bg-info text-dark fs-6">@doc.num</span>
+                                        <span class="badge bg-info text-dark fs-6">@doc.Num</span>
                                     </td>
                                 </tr>
                             }
@@ -111,12 +112,12 @@
 
 @code {
     private bool mostrarModal = false;
-    public List<Documentos> Itemlist { get; set; } = new List<Documentos>();
+    public List<DocumentoPredial> Itemlist { get; set; } = new List<DocumentoPredial>();
     public Item_res itemx { get; set; } = new Item_res();
     public DateTime desde;
     public DateTime hasta;
 
-    IQueryable<Documentos> data;
+    IQueryable<DocumentoPredial> data;
     bool isLoading = false;
     public int num_ss;
 

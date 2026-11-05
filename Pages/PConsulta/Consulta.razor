@@ -8,13 +8,15 @@
 @using Coactivos_Predial.Shared.Services.SPropietarios;
 @using Microsoft.AspNetCore.Components.Forms;
 @using System.Security.Claims
+@using Coactivos_Predial.Shared.Services.Document
+@using Coactivos_Predial.Shared.Services.SPredios
 
 @rendermode InteractiveServer
 @inject IConfiguration config
 @inject IArchivoService _archivoService
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject Coactivos_Predial.Shared.Services.DocumentoFiles.IDocumentoLinkService DocumentoLinkService
+@inject IDocumentoLinkService DocumentoLinkService
 @inject IConnectionService _connectionService
 @inject BusquedaService busquedaService
 @inject IPrediosService comparendoService
@@ -29,7 +31,7 @@
 
 <div class="mt-4">
     <UiPanel>
-        <form class="flex flex-col lg:flex-row items-center gap-4">
+        <form class="flex flex-col lg:flex-row items-center gap-4" @onsubmit="Consultar" @onsubmit:preventDefault>
             <div class="w-full flex-1">
                 <UiField Label="Código predial" For="codigo-predial" Help="Ingrese el código y presione Consultar.">
                     <UiInput Id="codigo-predial"
@@ -41,7 +43,7 @@
                 </UiField>
             </div>
             <div class="flex items-center gap-2">
-                <UiButton ButtonType="submit" Variant="primary">
+                <UiButton ButtonType="button" Variant="primary" OnClick="Consultar">
                     <UiIcon Name="search" />
                     Consultar
                 </UiButton>
@@ -212,17 +214,17 @@ else if (!busquedaRealizada)
                             {
                                 <tr>
                                     <td>
-                                        <p class="font-medium text-ink-900">@doc.nombre</p>
-                                        <p class="font-numeric max-w-[320px] truncate text-xs text-ink-500">@doc.archivo</p>
+                                        <p class="font-medium text-ink-900">@doc.Nombre</p>
+                                        <p class="font-numeric max-w-[320px] truncate text-xs text-ink-500">@doc.Ruta</p>
                                     </td>
-                                    <td class="font-numeric">@FechaTexto(doc.fecha)</td>
+                                    <td class="font-numeric">@FechaTexto(doc.Fecha)</td>
                                     <td class="actions">
                                         <div class="flex items-center justify-end gap-1">
-                                            <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.id))">
+                                            <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.Id))">
                                                 <UiIcon Name="file-text" />
                                                 Ver
                                             </UiButton>
-                                            <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.id/descargar">
+                                            <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.Id/descargar">
                                                 <UiIcon Name="download" /> Descargar
                                             </a>
                                             <AuthorizeView Roles="2">
@@ -305,10 +307,10 @@ else if (!busquedaRealizada)
     <ChildContent>
         <p class="text-sm text-ink-700">
             Se eliminará el documento
-            <span class="font-medium text-ink-900">@docPendienteEliminar?.nombre</span>.
+            <span class="font-medium text-ink-900">@docPendienteEliminar?.Nombre</span>.
         </p>
         <p class="font-numeric mt-2 break-all rounded-ui border border-line bg-paper px-3 py-2 text-xs text-ink-500">
-            @docPendienteEliminar?.archivo
+            @docPendienteEliminar?.Ruta
         </p>
     </ChildContent>
     <Footer>
@@ -329,7 +331,7 @@ else if (!busquedaRealizada)
         <div class="space-y-3">
             <UiField Label="Detalle del documento" For="documento-nombre">
                 <UiInput Id="documento-nombre"
-                         @bind-Value="Docsobj.nombre"
+                         @bind-Value="Docsobj.Nombre"
                          Placeholder="Ej. Recibo de pago, notificación"
                          Autocomplete="off" />
             </UiField>
@@ -337,7 +339,9 @@ else if (!busquedaRealizada)
             <UiField Label="Archivo PDF" For="documento-archivo">
                 <UiFileDrop @key="Docsobj"
                             Id="documento-archivo"
-                            FileName="@Docsobj.archivo"
+                            FileName="@Docsobj.Ruta"
+                            Accept=".pdf"
+                            Help="Solo archivos PDF, máximo 4 MB."
                             OnChange="ArchivoSeleccionado"
                             Error="@errors.FirstOrDefault()" />
             </UiField>
@@ -348,7 +352,7 @@ else if (!busquedaRealizada)
         <UiButton Variant="primary"
                   OnClick="SubirDocumento"
                   Loading="@subiendo"
-                  Disabled="@(subiendo || string.IsNullOrWhiteSpace(Docsobj.nombre) || string.IsNullOrWhiteSpace(Docsobj.archivo))">
+                  Disabled="@(subiendo || string.IsNullOrWhiteSpace(Docsobj.Nombre) || string.IsNullOrWhiteSpace(Docsobj.Ruta) || loadedFiles.Count != 1)">
             <UiIcon Name="upload" />
             Subir PDF
         </UiButton>
@@ -360,113 +364,3 @@ else if (!busquedaRealizada)
          Variant="ok"
          OnClose="CerrarAviso" />
 
-@code {
-    private bool busquedaRealizada;
-    private string? errorBusqueda;
-    private string? aviso;
-    private bool subiendo;
-    private bool mostrarModalSubir;
-
-    private string DocumentosResumen => listDocs is null || listDocs.Count == 0
-        ? "Sin documentos"
-        : $"{listDocs.Count} documento{(listDocs.Count == 1 ? "" : "s")}";
-
-    private string PropietariosResumen => propietlist is null || propietlist.Count == 0
-        ? "Sin propietarios"
-        : $"{propietlist.Count} propietario{(propietlist.Count == 1 ? "" : "s")}";
-
-    private string CondicionVariant => comp_obj.exento ? "warn" : "ok";
-
-    private async Task Consultar()
-    {
-        if (string.IsNullOrWhiteSpace(comp_obj.codigo))
-        {
-            errorBusqueda = "Ingrese un código predial para consultar.";
-            busquedaRealizada = false;
-            return;
-        }
-
-        errorBusqueda = null;
-        busquedaRealizada = true;
-
-        await obtenerLiquidacion();
-
-        if (!existe)
-        {
-            LimpiarCarga();
-            await getprop();
-            await getprocesos();
-        }
-    }
-
-    private async Task SeleccionarDesdeModal(string codigoCapturado)
-    {
-        errorBusqueda = null;
-        busquedaRealizada = true;
-        await ComparendoSeleccionadoDesdeModal(codigoCapturado);
-
-        if (!existe)
-        {
-            LimpiarCarga();
-        }
-    }
-
-    private void LimpiarCarga()
-    {
-        Docsobj = new Documentos { codigo_predial = comp_obj.codigo };
-        loadedFiles.Clear();
-        errors.Clear();
-        nombreArchivo = comp_obj.codigo;
-    }
-
-    private void AbrirModalSubir()
-    {
-        LimpiarCarga();
-        mostrarModalSubir = true;
-    }
-
-    private void CerrarModalSubir() => mostrarModalSubir = false;
-
-    private async Task ArchivoSeleccionado(InputFileChangeEventArgs e)
-    {
-        Docsobj.codigo_predial = comp_obj.codigo;
-        nombreArchivo = comp_obj.codigo;
-        await LoadFiles(e);
-    }
-
-    private async Task SubirDocumento()
-    {
-        Docsobj.codigo_predial = comp_obj.codigo;
-        subiendo = true;
-        int documentosAntes = listDocs?.Count ?? 0;
-
-        try
-        {
-            await Agregar_Pdf();
-        }
-        finally
-        {
-            subiendo = false;
-        }
-
-        if ((listDocs?.Count ?? 0) > documentosAntes)
-        {
-            Docsobj = new Documentos { codigo_predial = comp_obj.codigo };
-            loadedFiles.Clear();
-            errors.Clear();
-            nombreArchivo = comp_obj.codigo;
-            mostrarModalSubir = false;
-            aviso = "Documento cargado correctamente.";
-        }
-
-        StateHasChanged();
-    }
-
-    private void CerrarAviso() => aviso = null;
-
-    private static string FechaTexto(DateOnly fecha) =>
-        fecha == default || fecha.Year <= 1 ? "—" : fecha.ToString("dd/MM/yyyy");
-
-    private static string FechaTexto(DateTime fecha) =>
-        fecha == default || fecha.Year <= 1 ? "—" : fecha.ToString("dd/MM/yyyy");
-}

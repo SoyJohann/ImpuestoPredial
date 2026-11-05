@@ -1,9 +1,8 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
+using Coactivos_Predial.Shared.Services.DocumentoFiles;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Net.Http.Headers;
 
-namespace Coactivos_Predial.Shared.Services.DocumentoFiles;
+namespace Coactivos_Predial.Shared.Services.Document;
 
 public static class DocumentoEndpoints
 {
@@ -18,15 +17,7 @@ public static class DocumentoEndpoints
 
     private static async Task<IResult> ServeAsync(int id, IDocumentoFileService files, HttpContext context, CancellationToken cancellationToken, bool download)
     {
-        DocumentoFile? document;
-        try
-        {
-            document = await files.GetForCurrentUserAsync(id, cancellationToken);
-        }
-        catch (DocumentoAccessDeniedException)
-        {
-            return Results.Forbid();
-        }
+        var document = await files.GetByIdAsync(id, cancellationToken);
         if (document is null || !File.Exists(document.Path)) return Results.NotFound();
 
         var info = new FileInfo(document.Path);

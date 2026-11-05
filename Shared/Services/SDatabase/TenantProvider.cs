@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Coactivos_Predial.Shared.AppDbContext;
+using System.Security.Claims;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,22 +17,27 @@ namespace Coactivos_Predial.Shared.Services.SDatabase
     {
         private readonly AuthenticationStateProvider _auth;
         private readonly IDbContextFactory<MasterDbContext> _masterFactory;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public string? Municipio { get; private set; }
 
         public TenantProvider(AuthenticationStateProvider auth,
-                              IDbContextFactory<MasterDbContext> masterFactory)
+                              IDbContextFactory<MasterDbContext> masterFactory,
+                              IHttpContextAccessor httpContextAccessor)
         {
             _auth = auth;
             _masterFactory = masterFactory;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task InitializeAsync()
         {
             if (Municipio != null) return;
 
-            var state = await _auth.GetAuthenticationStateAsync();
-            var idStr = state.User.FindFirst("UserId")?.Value;
+            ClaimsPrincipal? principal = _httpContextAccessor.HttpContext?.User;
+            if (principal?.Identity?.IsAuthenticated != true)
+                principal = (await _auth.GetAuthenticationStateAsync()).User;
+            var idStr = principal.FindFirst("UserId")?.Value;
             if (!int.TryParse(idStr, out var id)) return;
 
             await using var master = await _masterFactory.CreateDbContextAsync();

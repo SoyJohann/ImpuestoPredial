@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Coactivos_Predial.Shared.Services.DocumentoFiles;
+using Coactivos_Predial.Shared.Services.SDatabase;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -100,6 +101,17 @@ public sealed class DocumentoEndpointsTests : IClassFixture<DocumentosFactory>
         Assert.False(DocumentoFileService.TryResolvePath(baseFolder, "../outside.pdf", out _, out _));
     }
 
+    [Fact]
+    public void ResolvesLegacyAbsolutePathByFileNameInsideSectorFolder()
+    {
+        var baseFolder = Path.Combine(Path.GetTempPath(), "predial-documents", "Cimitarra", "Predial");
+        var storedPath = Path.Combine(Path.GetTempPath(), "old-storage", "Cimitarra", "recibo.pdf");
+        Assert.True(DocumentoFileService.TryResolvePath(baseFolder, storedPath, out var fileName, out var resolved));
+        Assert.Equal("recibo.pdf", fileName);
+        Assert.Equal(Path.GetFullPath(Path.Combine(baseFolder, fileName)), resolved);
+        Assert.StartsWith(Path.GetFullPath(baseFolder) + Path.DirectorySeparatorChar, resolved);
+    }
+
     private static HttpRequestMessage AuthorizedRequest(string url)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -119,7 +131,9 @@ public sealed class DocumentosFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<IDocumentoFileService>();
-            services.AddSingleton<IDocumentoFileService>(sp => new FakeDocumentoFileService(_pdfPath, sp.GetRequiredService<IHttpContextAccessor>()));
+            services.AddSingleton<IDocumentoFileService>(new FakeDocumentoFileService(_pdfPath));
+            services.RemoveAll<ITenantProvider>();
+            services.AddScoped<ITenantProvider, FakeTenantProvider>();
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = "Test";
@@ -136,13 +150,20 @@ public sealed class DocumentosFactory : WebApplicationFactory<Program>
     }
 }
 
-public sealed class FakeDocumentoFileService(string path, IHttpContextAccessor httpContext) : IDocumentoFileService
+public sealed class FakeDocumentoFileService(string path) : IDocumentoFileService
 {
-    public Task<DocumentoFile?> GetForCurrentUserAsync(int id, CancellationToken cancellationToken)
+    public Task<DocumentoFile?> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
-        if (httpContext.HttpContext?.User.FindFirst("UserId") is null) throw new DocumentoAccessDeniedException();
-        return Task.FromResult<DocumentoFile?>(id == 1 ? new DocumentoFile(1, "predio", "test.pdf", path) : null);
+        return Task.FromResult<DocumentoFile?>(id == 1 ? new DocumentoFile(1, "test.pdf", path) : null);
     }
+}
+
+public sealed class FakeTenantProvider : ITenantProvider
+{
+    private readonly IHttpContextAccessor _context;
+    public FakeTenantProvider(IHttpContextAccessor context) => _context = context;
+    public string? Municipio => _context.HttpContext?.User.FindFirst("UserId") is null ? null : "test";
+    public Task InitializeAsync() => Task.CompletedTask;
 }
 
 public sealed class TestAuthenticationHandler(

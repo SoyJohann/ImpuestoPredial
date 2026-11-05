@@ -24,6 +24,24 @@ namespace Coactivos_Predial.Shared.Services.FileHandler
 
             try
             {
+                if (Path.IsPathRooted(partialFileName))
+                {
+                    var basePath = Path.GetFullPath(directoryPath);
+                    var storedPath = Path.GetFullPath(partialFileName.Trim());
+                    var normalizedBase = basePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                        + Path.DirectorySeparatorChar;
+                    var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                    if (!storedPath.StartsWith(normalizedBase, comparison) || !File.Exists(storedPath))
+                        return archivos;
+
+                    archivos.Add(new Archivo
+                    {
+                        Name = Path.GetFileName(storedPath),
+                        Ruta = storedPath
+                    });
+                    return archivos;
+                }
+
                 // Ensure partialFileName is just the file name
                 partialFileName = Path.GetFileName(partialFileName).Trim();
 
