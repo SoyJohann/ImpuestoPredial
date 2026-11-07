@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TailwindBinary Condition="'$(OS)' == 'Windows_NT'">$(MSBuildProjectDirectory)/tools/tailwindcss.exe</TailwindBinary>
     <TailwindBinary Condition="'$(OS)' != 'Windows_NT'">$(MSBuildProjectDirectory)/tools/tailwindcss</TailwindBinary>
+    <UserSecretsId>269704d6-383d-43a5-95a5-be1f072c4620</UserSecretsId>
   </PropertyGroup>
 
   <!-- Compila Tailwind antes del build si el binario local está disponible. -->

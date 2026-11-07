@@ -9,6 +9,7 @@ using Coactivos_Predial.Shared.Services.Document;
 using Coactivos_Predial.Shared.Services.FileHandler;
 using Coactivos_Predial.Shared.Services.FontResolver;
 using Coactivos_Predial.Shared.Services.SCoactivos;
+using Coactivos_Predial.Shared.Services.SContribuyentes;
 using Coactivos_Predial.Shared.Services.SDatabase;
 using Coactivos_Predial.Shared.Services.DocumentoFiles;
 using Coactivos_Predial.Shared.Services.SImportados;
@@ -34,6 +35,12 @@ var builder = WebApplication.CreateBuilder(args);
 if (args.Contains("--migrate-legacy-data", StringComparer.Ordinal))
 {
     await Coactivos_Predial.Database.LegacyDataMigration.RunAsync(builder.Configuration);
+    return;
+}
+
+if (args.Contains("--seed-demo", StringComparer.Ordinal))
+{
+    await Coactivos_Predial.Database.DemoSeeder.RunAsync(builder.Configuration);
     return;
 }
 
@@ -76,6 +83,7 @@ builder.Services.AddScoped<ICoactivosService, CoactivosService>();
 builder.Services.AddScoped<IArchivoService, ArchivoService>();
 builder.Services.AddScoped<IPersuasivoService, PersuasivoService>();
 builder.Services.AddScoped<IPrediosService, PrediosService>();
+builder.Services.AddScoped<IContribuyentesService, ContribuyentesService>();
 builder.Services.AddScoped<IParametroService, ParametroService>();
 builder.Services.AddScoped<IimportadosService, ImportadosService>();
 builder.Services.AddScoped<IUserService, UserService>();

@@ -1,0 +1,236 @@
+@page "/Consultacontribuyente"
+@using Coactivos_Predial.Shared.Components
+@using Coactivos_Predial.Shared.Models
+@using Coactivos_Predial.Shared.Services.Document
+@using Coactivos_Predial.Shared.Services.SContribuyentes
+@using Coactivos_Predial.Shared.Services.SPDios.Responses
+
+@rendermode InteractiveServer
+@inject IContribuyentesService contribuyentesService
+@inject IDocumentoLinkService DocumentoLinkService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Consulta de contribuyente</PageTitle>
+
+<div>
+    <h1 class="text-[22px] font-semibold leading-7 text-ink-900">Consulta de contribuyente</h1>
+    <p class="mt-1 text-sm text-ink-500">Busque por NIT y consulte los negocios y documentos de industria y comercio.</p>
+</div>
+
+<div class="mt-4">
+    <UiPanel>
+        <form class="flex flex-col items-stretch gap-4 lg:flex-row lg:items-end" @onsubmit="Consultar" @onsubmit:preventDefault>
+            <div class="w-full flex-1">
+                <UiField Label="NIT" For="nit-contribuyente" Help="Ingrese el NIT registrado y presione Consultar.">
+                    <UiInput Id="nit-contribuyente"
+                             @bind-Value="nit"
+                             Mono="true"
+                             Placeholder="Ej. 900123456"
+                             Autocomplete="off"
+                             Autofocus="true" />
+                </UiField>
+            </div>
+            <div class="flex items-center gap-2">
+                <UiButton ButtonType="button" Variant="primary" OnClick="Consultar">
+                    <UiIcon Name="search" />
+                    Consultar
+                </UiButton>
+                <UiButton Variant="secondary" OnClick="ShowBusqueda">
+                    <UiIcon Name="folder-open" />
+                    Buscar por NIT
+                </UiButton>
+            </div>
+        </form>
+    </UiPanel>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(errorBusqueda))
+{
+    <div class="mt-4 rounded-ui border border-danger-600/20 bg-danger-600/5 px-4 py-2.5 text-sm text-danger-600" role="alert">
+        @errorBusqueda
+    </div>
+}
+else if (busquedaRealizada && !isLoading && Contribuyentes.Count == 0)
+{
+    <div class="mt-4 rounded-ui border border-warn-600/20 bg-warn-600/5 px-4 py-2.5 text-sm text-warn-600" role="alert">
+        No se encontró un contribuyente con ese NIT. Verifique el dato e intente de nuevo.
+    </div>
+}
+else if (!busquedaRealizada)
+{
+    <div class="mt-4">
+        <UiPanel BodyClass="p-0">
+            <UiEmpty Icon="search"
+                     Title="Consulte un contribuyente"
+                     Message="Ingrese el NIT o búsquelo por documento para ver los negocios registrados y sus documentos de industria y comercio." />
+        </UiPanel>
+    </div>
+}
+
+@if (isLoading)
+{
+    <div class="mt-4">
+        <UiPanel>
+            <UiLoading Text="Consultando contribuyente…" />
+        </UiPanel>
+    </div>
+}
+else if (busquedaRealizada && Contribuyentes.Count > 0)
+{
+    <div class="mt-4 space-y-4">
+        @if (Contribuyentes.Count > 1)
+        {
+            <UiPanel Title="Negocios" Subtitle="@NegociosResumen" BodyClass="p-0">
+                <UiTable>
+                    <Header>
+                        <tr>
+                            <th>Nombre comercial</th>
+                            <th>Matrícula</th>
+                            <th>Actividad</th>
+                            <th>Estado</th>
+                            <th class="text-right">Acciones</th>
+                        </tr>
+                    </Header>
+                    <ChildContent>
+                        @foreach (var item in Contribuyentes)
+                        {
+                            <tr class="@(Seleccionado?.Id == item.Id ? "bg-accent-50" : string.Empty)">
+                                <td>@(string.IsNullOrWhiteSpace(item.NombreComercial) ? "—" : item.NombreComercial)</td>
+                                <td class="font-numeric">@(string.IsNullOrWhiteSpace(item.MatriculaMercantil) ? "—" : item.MatriculaMercantil)</td>
+                                <td class="font-numeric">@(string.IsNullOrWhiteSpace(item.ActividadEconomica) ? "—" : item.ActividadEconomica)</td>
+                                <td><UiBadge Variant="@EstadoVariant(item.Estado)">@EstadoTexto(item.Estado)</UiBadge></td>
+                                <td class="text-right">
+                                    <UiButton Variant="ghost" Size="sm" OnClick="@((e) => Seleccionar(item))">
+                                        <UiIcon Name="chevron-right" />
+                                        Ver
+                                    </UiButton>
+                                </td>
+                            </tr>
+                        }
+                    </ChildContent>
+                </UiTable>
+            </UiPanel>
+        }
+
+        @if (Seleccionado is { } contribuyente)
+        {
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+                <div class="space-y-4">
+                    <UiPanel Title="Contribuyente" Subtitle="@contribuyente.NombreComercial">
+                        <dl class="divide-y divide-line">
+                            <div class="flex h-7 items-center justify-between gap-4">
+                                <dt class="shrink-0 text-xs font-medium text-ink-500">Nombre comercial</dt>
+                                <dd class="truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(contribuyente.NombreComercial) ? "—" : contribuyente.NombreComercial)</dd>
+                            </div>
+                            <div class="flex h-7 items-center justify-between gap-4">
+                                <dt class="shrink-0 text-xs font-medium text-ink-500">Matrícula mercantil</dt>
+                                <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(contribuyente.MatriculaMercantil) ? "—" : contribuyente.MatriculaMercantil)</dd>
+                            </div>
+                            <div class="flex h-7 items-center justify-between gap-4">
+                                <dt class="shrink-0 text-xs font-medium text-ink-500">Actividad (CIIU)</dt>
+                                <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(contribuyente.ActividadEconomica) ? "—" : contribuyente.ActividadEconomica)</dd>
+                            </div>
+                            <div class="flex h-7 items-center justify-between gap-4">
+                                <dt class="shrink-0 text-xs font-medium text-ink-500">Dirección</dt>
+                                <dd class="truncate text-right text-sm text-ink-900" title="@contribuyente.Direccion">@(string.IsNullOrWhiteSpace(contribuyente.Direccion) ? "—" : contribuyente.Direccion)</dd>
+                            </div>
+                            <div class="flex h-7 items-center justify-between gap-4">
+                                <dt class="shrink-0 text-xs font-medium text-ink-500">Inicio de actividad</dt>
+                                <dd class="font-numeric truncate text-right text-sm text-ink-900">@FechaTexto(contribuyente.FechaInicioActividad)</dd>
+                            </div>
+                            <div class="flex h-7 items-center justify-between gap-4">
+                                <dt class="shrink-0 text-xs font-medium text-ink-500">Estado</dt>
+                                <dd class="text-right">
+                                    <UiBadge Variant="@EstadoVariant(contribuyente.Estado)">@EstadoTexto(contribuyente.Estado)</UiBadge>
+                                </dd>
+                            </div>
+                        </dl>
+                    </UiPanel>
+
+                    <UiPanel Title="Propietario">
+                        <dl class="divide-y divide-line">
+                            <div class="flex h-7 items-center justify-between gap-4">
+                                <dt class="shrink-0 text-xs font-medium text-ink-500">Nombre</dt>
+                                <dd class="truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(contribuyente.PropietarioNombre) ? "Sin dato" : contribuyente.PropietarioNombre)</dd>
+                            </div>
+                            <div class="flex h-7 items-center justify-between gap-4">
+                                <dt class="shrink-0 text-xs font-medium text-ink-500">NIT</dt>
+                                <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(contribuyente.PropietarioDocumento) ? "—" : contribuyente.PropietarioDocumento)</dd>
+                            </div>
+                        </dl>
+                    </UiPanel>
+                </div>
+
+                <UiPanel Title="Documentos" Subtitle="@DocumentosResumen" BodyClass="p-0">
+                    <Actions>
+                        <UiButton Variant="ghost" Size="sm" OnClick="ActualizarDocumentos" Title="Actualizar" AriaLabel="Actualizar documentos">
+                            <UiIcon Name="refresh" />
+                        </UiButton>
+                    </Actions>
+
+                    <ChildContent>
+                        @if (DocumentosDto.Count == 0)
+                        {
+                            <UiEmpty Icon="file-text"
+                                     Title="Este contribuyente aún no tiene documentos"
+                                     Message="Los documentos de industria y comercio aparecerán aquí cuando se carguen." />
+                        }
+                        else
+                        {
+                            <div class="border-b border-line px-3 py-2">
+                                <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
+                                       class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
+                            </div>
+                            <UiTable Class="max-h-[calc(100vh-380px)] min-h-[160px] overscroll-contain">
+                                <Header>
+                                    <tr>
+                                        <th>Documento</th>
+                                        <th>Fecha</th>
+                                        <th class="text-right">Acciones</th>
+                                    </tr>
+                                </Header>
+                                <ChildContent>
+                                    @foreach (var doc in DocumentosFiltrados)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <p class="font-medium text-ink-900">@doc.Nombre</p>
+                                                <p class="font-numeric max-w-[320px] truncate text-xs text-ink-500">@doc.Ruta</p>
+                                            </td>
+                                            <td class="font-numeric">@FechaTexto(doc.Fecha)</td>
+                                            <td class="actions">
+                                                <div class="flex items-center justify-end gap-1">
+                                                    <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.Id))">
+                                                        <UiIcon Name="file-text" />
+                                                        Ver
+                                                    </UiButton>
+                                                    <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.Id/descargar">
+                                                        <UiIcon Name="download" /> Descargar
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </ChildContent>
+                            </UiTable>
+                        }
+                    </ChildContent>
+                </UiPanel>
+            </div>
+        }
+    </div>
+}
+
+<!-- Visor de PDF (fuera del bloque del contribuyente para que siempre exista) -->
+<PdfViewerModal @ref="pdfViewerModal" />
+
+<!-- Búsqueda de contribuyente por documento -->
+<UiDialog Open="@mostrarModalBusqueda"
+          OnClose="CerrarModalBusqueda"
+          Title="Buscar contribuyente por NIT"
+          Subtitle="Seleccione el contribuyente que desea consultar."
+          Size="lg">
+    <Busqueda Modo="ModoBusqueda.Contribuyente"
+              OnContribuyenteSeleccionado="SeleccionarContribuyenteDesdeModal"
+              OnCerrar="CerrarModalBusqueda" />
+</UiDialog>

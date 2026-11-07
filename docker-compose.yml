@@ -3,27 +3,47 @@ services:
     build: .
     container_name: coactivos-predial
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+
+    # Usuario sin privilegios (UID del usuario "app" en las imágenes de .NET).
+    # Los datos del anfitrión en /srv/sgd deben pertenecer a este mismo UID.
+    user: "1654:1654"
+
+    # Comparte la red del anfitrión para llegar a PostgreSQL en localhost:5432
+    # sin exponer la base. No se usa "ports": la app escucha en el 8080 del VPS.
+    network_mode: host
+
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      # La cadena llega por la tarjeta network del anfitrión (postgres instalado en el VPS).
-      # Cambie las credenciales con variables de entorno o un archivo .env junto a este compose.
-      ConnectionStrings__DefaultConnectionTemplate: "host=host.docker.internal;port=5432;Database={Database};username=${POSTGRES_USER:-postgres};password=${POSTGRES_PASSWORD:-adminsql26}"
-      ConnectionStrings__MasterConnection: "host=host.docker.internal;port=5432;Database=General_Coactivo;username=${POSTGRES_USER:-postgres};password=${POSTGRES_PASSWORD:-adminsql26}"
-      # La app resuelve la carpeta real como {Municipio}/{Sector}: con el mount
-      # de abajo, Cimitarra/Predial dentro del contenedor es /root/Cimitarra/Predial
-      # del anfitrión (donde usted dejará los documentos).
-      FileStorageTemplate: "/data/{Municipio}/{Sector}/"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      # Documentos del municipio. Conforme se incorporan municipios,
-      # agregue una línea por cada uno: - /root/{Municipio}:/data/{Municipio}
-      - /root/Cimitarra:/data/Cimitarra
-      # Conserva las claves de autenticación entre reinicios del contenedor:
-      # sin esto, los usuarios deberían iniciar sesión cada vez que reinicia.
-      - dp_keys:/root/.aspnet/DataProtection-Keys
 
-volumes:
-  dp_keys:
+      # Necesario porque Nginx termina TLS y reenvía la petición a la app.
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+
+      # Solo loopback: con network_mode host, sin esto el 8080 quedaría
+      # abierto en todas las interfaces y se saltaría Nginx.
+      ASPNETCORE_URLS: "http://127.0.0.1:8080"
+
+      # Sin valores por defecto: si falta la variable en .env, el arranque falla.
+      ConnectionStrings__DefaultConnectionTemplate: "host=localhost;port=5432;Database={Database};username=${POSTGRES_USER:?Defina POSTGRES_USER en .env};password=${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}"
+      ConnectionStrings__MasterConnection: "host=localhost;port=5432;Database=General_Coactivo;username=${POSTGRES_USER:?Defina POSTGRES_USER en .env};password=${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}"
+
+      # La app arma la carpeta de cada documento a partir de esta plantilla.
+      FileStorageTemplate: "/data/{Municipio}/{Sector}/"
+
+    volumes:
+      # Carpeta padre de documentos: la app crea {Municipio}/{Sector} dentro.
+      - /srv/sgd/data:/data
+
+      # Llaves de autenticación, en el anfitrión y fuera de /data.
+      - /srv/sgd/keys:/home/app/.aspnet/DataProtection-Keys
+
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

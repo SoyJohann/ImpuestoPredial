@@ -27,6 +27,12 @@ public class Documentos : EntityWithTraceability
     [Column("Ruta")]
     public string? Ruta { get; set; }
 
+    [Column("ContribuyenteId")]
+    public int? ContribuyenteId { get; set; }
+
     [ForeignKey(nameof(PredioId))]
     public Predio? Predio { get; set; }
+
+    [ForeignKey(nameof(ContribuyenteId))]
+    public Contribuyente? Contribuyente { get; set; }
 }

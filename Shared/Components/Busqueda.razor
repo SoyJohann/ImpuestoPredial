@@ -1,19 +1,21 @@
 ﻿@using System.Linq
 @using Coactivos_Predial.Shared.Models
 @using Coactivos_Predial.Shared.Services
+@using Coactivos_Predial.Shared.Services.SContribuyentes
 @using Coactivos_Predial.Shared.Services.SPredios
 @using Coactivos_Predial.Shared.Services.SPredios.Responses
 @inject BusquedaService busquedaService
 @inject IPrediosService prediosService
+@inject IContribuyentesService contribuyentesService
 
 <div>
-    <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @onsubmit="BuscarPorCedula" @onsubmit:preventDefault>
+    <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @onsubmit="Buscar" @onsubmit:preventDefault>
         <div class="flex-1">
-            <UiField Label="Documento" For="busqueda-documento">
+            <UiField Label="@EtiquetaDocumento" For="busqueda-documento">
                 <UiInput Id="busqueda-documento"
-                         @bind-Value="pcedula"
+                         @bind-Value="documento"
                          Mono="true"
-                         Placeholder="Cédula o NIT"
+                         Placeholder="@PlaceholderDocumento"
                          Autocomplete="off"/>
             </UiField>
         </div>
@@ -27,23 +29,23 @@
         <UiTable Bordered="true">
             <Header>
                 <tr>
-                    <th>Código predial</th>
-                    <th>Nombre</th>
+                    <th>@EncabezadoDocumento</th>
+                    <th>@EncabezadoNombre</th>
                     <th>Dirección</th>
-                    <th class="text-right">Avalúo</th>
+                    <th class="text-right">@EncabezadoDetalle</th>
                 </tr>
             </Header>
             <ChildContent>
-                @if (prediosEncontrados.Any())
+                @if (filas.Count > 0)
                 {
                     @foreach (var item in GetPaginaActual())
                     {
-                        <tr class="@($"cursor-pointer {(predioSeleccionado?.CodigoPredial == item.CodigoPredial ? "bg-accent-50" : string.Empty)}")"
+                        <tr class="@($"cursor-pointer {(seleccionada == item ? "bg-accent-50" : string.Empty)}")"
                             @onclick="() => SeleccionarFila(item)">
-                            <td class="font-numeric">@item.CodigoPredial</td>
+                            <td class="font-numeric">@item.Documento</td>
                             <td>@item.Nombre</td>
                             <td>@item.Direccion</td>
-                            <td class="num">@((item.Avaluo ?? 0).ToString("C"))</td>
+                            <td class="num">@item.Detalle</td>
                         </tr>
                     }
                 }
@@ -51,7 +53,7 @@
                 {
                     <tr>
                         <td colspan="4" class="py-8 text-center text-ink-500">
-                            No hay resultados. Ingrese un documento y presione Buscar.
+                            @MensajeSinResultados
                         </td>
                     </tr>
                 }
@@ -59,10 +61,10 @@
         </UiTable>
     </div>
 
-    <UiPager Page="paginaActual" PageSize="5" TotalItems="prediosEncontrados.Count" OnPageChanged="CambiarPagina"/>
+    <UiPager Page="paginaActual" PageSize="5" TotalItems="filas.Count" OnPageChanged="CambiarPagina"/>
     <div class="mt-4 flex flex-wrap justify-end gap-2">
         <UiButton Variant="secondary" OnClick="Cerrar">Cancelar</UiButton>
-        <UiButton Variant="primary" OnClick="EnviarDatos" Disabled="@(predioSeleccionado is null)">
+        <UiButton Variant="primary" OnClick="EnviarDatos" Disabled="@(seleccionada is null)">
             <UiIcon Name="check"/>
             Seleccionar
         </UiButton>
@@ -70,36 +72,107 @@
 </div>
 
 @code {
+    /// <summary>Define si la búsqueda consulta predios o contribuyentes de industria y comercio.</summary>
+    [Parameter] public ModoBusqueda Modo { get; set; } = ModoBusqueda.Predio;
+
+    /// <summary>Devuelve el código predial o, en modo contribuyente, el NIT del negocio.</summary>
     [Parameter] public EventCallback<string> OnSeleccionado { get; set; }
+
+    /// <summary>Devuelve el contribuyente elegido para que la vista cargue sus documentos.</summary>
+    [Parameter] public EventCallback<ContribuyenteDto> OnContribuyenteSeleccionado { get; set; }
+
     [Parameter] public EventCallback OnCerrar { get; set; }
 
-    private List<PredioBusquedaDto> prediosEncontrados = new();
-    private PredioBusquedaDto? predioSeleccionado;
-    private string? pcedula;
+    private List<FilaBusqueda> filas = new();
+    private FilaBusqueda? seleccionada;
+    private string? documento;
     private int paginaActual = 1;
+
+    private bool EsContribuyente => Modo == ModoBusqueda.Contribuyente;
+
+    private string EtiquetaDocumento => EsContribuyente ? "NIT o documento" : "Documento";
+
+    private string PlaceholderDocumento => EsContribuyente ? "NIT del contribuyente" : "Cédula o NIT";
+
+    private string EncabezadoDocumento => EsContribuyente ? "NIT" : "Código predial";
+
+    private string EncabezadoNombre => EsContribuyente ? "Nombre comercial" : "Nombre";
+
+    private string EncabezadoDetalle => EsContribuyente ? "Matrícula" : "Avalúo";
+
+    private string MensajeSinResultados => EsContribuyente
+        ? "No hay resultados. Ingrese un NIT y presione Buscar."
+        : "No hay resultados. Ingrese un documento y presione Buscar.";
 
     protected override void OnInitialized()
     {
-        pcedula = busquedaService.ObtenerUltimoCodigoSeleccionado();
+        // Solo la búsqueda de predios reutiliza el último código seleccionado.
+        if (!EsContribuyente)
+        {
+            documento = busquedaService.ObtenerUltimoCodigoSeleccionado();
+        }
     }
 
-    private IEnumerable<PredioBusquedaDto> GetPaginaActual()
+    private IEnumerable<FilaBusqueda> GetPaginaActual()
     {
         int skip = (paginaActual - 1) * 5;
-        return prediosEncontrados.Skip(skip).Take(5);
+        return filas.Skip(skip).Take(5);
     }
 
-    private async Task BuscarPorCedula()
+    private async Task Buscar()
     {
-        if (!string.IsNullOrWhiteSpace(pcedula))
+        if (string.IsNullOrWhiteSpace(documento))
         {
-            var resultado = await prediosService.BuscarPrediosPorCedula(pcedula.Trim());
-            prediosEncontrados = resultado.IsSuccess && resultado.Value is not null
-                ? resultado.Value
-                : new List<PredioBusquedaDto>();
-            predioSeleccionado = null;
-            paginaActual = 1;
+            return;
         }
+
+        var termino = documento.Trim();
+        filas = EsContribuyente
+            ? await BuscarContribuyentesAsync(termino)
+            : await BuscarPrediosAsync(termino);
+
+        seleccionada = null;
+        paginaActual = 1;
+    }
+
+    private async Task<List<FilaBusqueda>> BuscarPrediosAsync(string cedula)
+    {
+        var resultado = await prediosService.BuscarPrediosPorCedula(cedula);
+
+        if (resultado.IsSuccess && resultado.Value is not null)
+        {
+            return resultado.Value
+                .Select(predio => new FilaBusqueda(
+                    null,
+                    predio.CodigoPredial,
+                    predio.CodigoPredial,
+                    predio.Nombre ?? "—",
+                    predio.Direccion ?? "—",
+                    (predio.Avaluo ?? 0).ToString("C")))
+                .ToList();
+        }
+
+        return new List<FilaBusqueda>();
+    }
+
+    private async Task<List<FilaBusqueda>> BuscarContribuyentesAsync(string nit)
+    {
+        var resultado = await contribuyentesService.GetByNit(nit);
+
+        if (resultado.IsSuccess && resultado.Value is not null)
+        {
+            return resultado.Value
+                .Select(contribuyente => new FilaBusqueda(
+                    contribuyente,
+                    contribuyente.PropietarioDocumento,
+                    contribuyente.PropietarioDocumento,
+                    string.IsNullOrWhiteSpace(contribuyente.NombreComercial) ? "—" : contribuyente.NombreComercial,
+                    string.IsNullOrWhiteSpace(contribuyente.Direccion) ? "—" : contribuyente.Direccion,
+                    string.IsNullOrWhiteSpace(contribuyente.MatriculaMercantil) ? "—" : contribuyente.MatriculaMercantil))
+                .ToList();
+        }
+
+        return new List<FilaBusqueda>();
     }
 
     private async Task CambiarPagina(int nuevaPagina)
@@ -109,16 +182,32 @@
 
     private async Task EnviarDatos()
     {
-        if (predioSeleccionado is null)
+        if (seleccionada is null)
         {
             return;
         }
 
-        var codigoPredial = predioSeleccionado.CodigoPredial;
-        await busquedaService.GuardarCodigoSeleccionado(codigoPredial);
+        if (EsContribuyente)
+        {
+            if (seleccionada.Contribuyente is { } contribuyente
+                && OnContribuyenteSeleccionado.HasDelegate)
+            {
+                await OnContribuyenteSeleccionado.InvokeAsync(contribuyente);
+                return;
+            }
+
+            if (OnSeleccionado.HasDelegate)
+            {
+                await OnSeleccionado.InvokeAsync(seleccionada.Referencia);
+            }
+
+            return;
+        }
+
+        await busquedaService.GuardarCodigoSeleccionado(seleccionada.Referencia);
         if (OnSeleccionado.HasDelegate)
         {
-            await OnSeleccionado.InvokeAsync(codigoPredial);
+            await OnSeleccionado.InvokeAsync(seleccionada.Referencia);
         }
     }
 
@@ -130,9 +219,16 @@
         }
     }
 
-    private void SeleccionarFila(PredioBusquedaDto item)
+    private void SeleccionarFila(FilaBusqueda item)
     {
-        predioSeleccionado = item;
+        seleccionada = item;
     }
 
+    private sealed record FilaBusqueda(
+        ContribuyenteDto? Contribuyente,
+        string Referencia,
+        string Documento,
+        string Nombre,
+        string Direccion,
+        string Detalle);
 }

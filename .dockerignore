@@ -6,6 +6,11 @@ obj/
 .git/
 .gitignore/
 
+# Secretos de despliegue: nunca deben entrar al contexto de construcción
+.env
+.env.*
+!.env.example
+
 # Pruebas: no compilan dentro de la imagen de producción
 **/Coactivos_Predial.Tests/
 

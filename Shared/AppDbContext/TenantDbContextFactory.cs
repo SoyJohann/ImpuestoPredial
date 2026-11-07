@@ -19,6 +19,9 @@ public sealed class TenantDbContextFactory : IDesignTimeDbContextFactory<TenantD
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false)
             .AddJsonFile($"appsettings.{environment}.json", optional: true)
+            // Las cadenas de conexión de desarrollo viven en User Secrets,
+            // fuera del repositorio. En producción llegan por variables de entorno.
+            .AddUserSecrets<TenantDbContextFactory>(optional: true)
             .AddEnvironmentVariables()
             .Build();
 

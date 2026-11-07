@@ -62,6 +62,13 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
             .Property(documento => documento.Modulo)
             .HasConversion<int>();
 
+        modelBuilder.Entity<Documentos>()
+            .HasOne(documento => documento.Contribuyente)
+            .WithMany(contribuyente => contribuyente.Documentos)
+            .HasForeignKey(documento => documento.ContribuyenteId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<Contribuyente>()
             .HasOne(c => c.Propietario)
             .WithMany(p => p.Contribuyentes)
