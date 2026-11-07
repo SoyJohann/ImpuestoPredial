@@ -23,3 +23,39 @@
                   Variant="blue"
                   IconName="IndustriaYComercio" />
 </div>
+
+<div class="mt-8">
+    <UiPanel Title="Documentos" Subtitle="Conteo de documentos registrados en el sistema." BodyClass="p-0">
+        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="border border-line rounded-ui p-4 bg-surface">
+                <dt class="text-xs font-medium text-ink-500 uppercase tracking-wider">Predial</dt>
+                <dd class="mt-1 font-mono text-2xl font-semibold tabular-nums text-ink-900">
+                    @documentosPredial?.ToString("N0") ?? "—"
+                </dd>
+                <p class="mt-2 text-xs text-ink-500">documentos activos</p>
+            </div>
+
+            <div class="border border-line rounded-ui p-4 bg-surface">
+                <dt class="text-xs font-medium text-ink-500 uppercase tracking-wider">Industria y Comercio</dt>
+                <dd class="mt-1 font-mono text-2xl font-semibold tabular-nums text-ink-700">—</dd>
+                <p class="mt-2 text-xs text-ink-500">sin registros por ahora</p>
+            </div>
+        </dl>
+    </UiPanel>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="mt-4 rounded-ui border border-danger-600/20 bg-danger-600/5 px-4 py-2.5 text-sm text-danger-600" role="alert">
+        @error
+    </div>
+}
+
+@if (cargando && !documentosPredial.HasValue)
+{
+    <div class="mt-4">
+        <UiPanel>
+            <UiLoading Text="Cargando estadísticas…" />
+        </UiPanel>
+    </div>
+}

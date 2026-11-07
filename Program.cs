@@ -18,6 +18,7 @@ using Coactivos_Predial.Shared.Services.SParametros;
 using Coactivos_Predial.Shared.Services.Spersuasivo;
 using Coactivos_Predial.Shared.Services.SPredios;
 using Coactivos_Predial.Shared.Services.SPropietarios;
+using Coactivos_Predial.Shared.Services.SEstadisticas;
 using Coactivos_Predial.Shared.Services.SUser;
 using Coactivos_Predial.Shared.Services.UserAccesor;
 using Coactivos_Predial.Shared.Services.SPropietarios;
@@ -89,6 +90,7 @@ builder.Services.AddScoped<IimportadosService, ImportadosService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IpropietariosService, PropietariosService>();
 builder.Services.AddScoped<ILoginService, LoginService>();
+builder.Services.AddScoped<IEstadisticasService, EstadisticasService>();
 builder.Services.AddScoped<TokenProvider>();
 builder.Services.AddSingleton<BusquedaService>();
 

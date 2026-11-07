@@ -81,11 +81,20 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
         {
             _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Shared/Components/Ui/PdfViewerModal.razor.js");
             _self = DotNetObjectReference.Create(this);
             await _module.InvokeVoidAsync("attach", _self);
+        }
+        catch (JSDisconnectedException)
+        {
+            // El circuito se desconectó antes de terminar de inicializar el visor.
         }
     }
 
@@ -93,9 +102,35 @@
     {
         if (_module is not null)
         {
-            await _module.InvokeVoidAsync("detach");
-            await _module.DisposeAsync();
+            try
+            {
+                await _module.InvokeVoidAsync("detach");
+            }
+            catch (JSDisconnectedException)
+            {
+                // El circuito ya se desconectó; no hay listeners que retirar en el navegador.
+            }
+            catch (ObjectDisposedException)
+            {
+                // El módulo ya fue liberado.
+            }
+
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // El circuito ya se desconectó; no hay nada que liberar.
+            }
+            catch (ObjectDisposedException)
+            {
+                // El módulo ya fue liberado.
+            }
         }
+
         _self?.Dispose();
+        _self = null;
+        _module = null;
     }
 }

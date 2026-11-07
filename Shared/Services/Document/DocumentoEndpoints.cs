@@ -8,14 +8,17 @@ public static class DocumentoEndpoints
 {
     public static IEndpointRouteBuilder MapDocumentoEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/api/documentos/{id:int}/ver", async (int id, IDocumentoFileService files, HttpContext context, CancellationToken cancellationToken) =>
-            await ServeAsync(id, files, context, cancellationToken, download: false)).RequireAuthorization();
-        endpoints.MapGet("/api/documentos/{id:int}/descargar", async (int id, IDocumentoFileService files, HttpContext context, CancellationToken cancellationToken) =>
+        endpoints.MapGet("/api/documentos/{id:int}/ver",
+            async (int id, IDocumentoFileService files, HttpContext context, CancellationToken cancellationToken) =>
+                await ServeAsync(id, files, context, cancellationToken, download: false)).RequireAuthorization();
+        endpoints.MapGet("/api/documentos/{id:int}/descargar", async (int id, IDocumentoFileService files,
+                HttpContext context, CancellationToken cancellationToken) =>
             await ServeAsync(id, files, context, cancellationToken, download: true)).RequireAuthorization();
         return endpoints;
     }
 
-    private static async Task<IResult> ServeAsync(int id, IDocumentoFileService files, HttpContext context, CancellationToken cancellationToken, bool download)
+    private static async Task<IResult> ServeAsync(int id, IDocumentoFileService files, HttpContext context,
+        CancellationToken cancellationToken, bool download)
     {
         var document = await files.GetByIdAsync(id, cancellationToken);
         if (document is null || !File.Exists(document.Path)) return Results.NotFound();
@@ -28,13 +31,16 @@ public static class DocumentoEndpoints
         context.Response.Headers["Content-Security-Policy"] = "frame-ancestors 'self'";
         context.Response.Headers["Cache-Control"] = "private, max-age=0, must-revalidate";
         context.Response.Headers["Accept-Ranges"] = "bytes";
-        context.Response.Headers["Content-Disposition"] = new ContentDispositionHeaderValue(download ? "attachment" : "inline")
-        {
-            FileNameStar = Path.GetFileName(document.Path)
-        }.ToString();
+        context.Response.Headers["Content-Disposition"] =
+            new ContentDispositionHeaderValue(download ? "attachment" : "inline")
+            {
+                FileNameStar = Path.GetFileName(document.Path)
+            }.ToString();
 
-        var stream = new FileStream(document.Path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-        return Results.Stream(stream, "application/pdf", lastModified: modified, entityTag: entityTag, enableRangeProcessing: true);
+        var stream = new FileStream(document.Path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        return Results.Stream(stream, "application/pdf", lastModified: modified, entityTag: entityTag,
+            enableRangeProcessing: true);
     }
 
     public static StaticFileOptions PdfJsStaticFileOptions()
