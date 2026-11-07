@@ -8,6 +8,10 @@ RUN dotnet restore Coactivos_Predial.csproj
 
 # Después el resto del código
 COPY . .
+
+# Segundo restore con el proyecto completo. El SDK necesita ver los .razor
+# para incluir los estáticos de Blazor (_framework/blazor.web.js) al publicar.
+RUN dotnet restore Coactivos_Predial.csproj
 RUN dotnet publish Coactivos_Predial.csproj -c Release -o /app --no-restore
 
 # ------------------------------------------------------------------ run ------

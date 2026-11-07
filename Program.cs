@@ -144,6 +144,7 @@ app.UseStaticFiles(DocumentoEndpoints.PdfJsStaticFileOptions());
 app.UseAuthentication();
 app.UseAntiforgery();
 app.UseAuthorization();
+app.MapStaticAssets();
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/api") && context.User.Identity?.IsAuthenticated == true)
