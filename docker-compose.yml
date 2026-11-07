@@ -1,0 +1,29 @@
+services:
+  app:
+    build: .
+    container_name: coactivos-predial
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # La cadena llega por la tarjeta network del anfitrión (postgres instalado en el VPS).
+      # Cambie las credenciales con variables de entorno o un archivo .env junto a este compose.
+      ConnectionStrings__DefaultConnectionTemplate: "host=host.docker.internal;port=5432;Database={Database};username=${POSTGRES_USER:-postgres};password=${POSTGRES_PASSWORD:-adminsql26}"
+      ConnectionStrings__MasterConnection: "host=host.docker.internal;port=5432;Database=General_Coactivo;username=${POSTGRES_USER:-postgres};password=${POSTGRES_PASSWORD:-adminsql26}"
+      # La app resuelve la carpeta real como {Municipio}/{Sector}: con el mount
+      # de abajo, Cimitarra/Predial dentro del contenedor es /root/Cimitarra/Predial
+      # del anfitrión (donde usted dejará los documentos).
+      FileStorageTemplate: "/data/{Municipio}/{Sector}/"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # Documentos del municipio. Conforme se incorporan municipios,
+      # agregue una línea por cada uno: - /root/{Municipio}:/data/{Municipio}
+      - /root/Cimitarra:/data/Cimitarra
+      # Conserva las claves de autenticación entre reinicios del contenedor:
+      # sin esto, los usuarios deberían iniciar sesión cada vez que reinicia.
+      - dp_keys:/root/.aspnet/DataProtection-Keys
+
+volumes:
+  dp_keys:

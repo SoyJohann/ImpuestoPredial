@@ -9,7 +9,7 @@ public class PrediosProp
     public int Id { get; set; }
 
     public int MaestroId { get; set; }
-    public Maestro Predio { get; set; } = null!;
+    public Predio Predio { get; set; } = null!;
 
     public int PropietarioId { get; set; }
     public Propietarios Propietario { get; set; } = null!;

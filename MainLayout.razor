@@ -49,6 +49,12 @@
                 <nav class="ui-sidebar-scroll flex-1 overflow-y-auto px-3 py-4" aria-label="Menú principal">
                     <ul class="space-y-1">
                         <li>
+                            <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Inicio" @onclick="CloseSidebar">
+                                <UiIcon Name="home" Size="16" Class="text-white/40" />
+                                <span>Inicio</span>
+                            </NavLink>
+                        </li>
+                        <li>
                             <NavLink class="@NavItemClass" ActiveClass="@NavActiveClass" href="/Consultapage" @onclick="CloseSidebar">
                                 <UiIcon Name="search" Size="16" Class="text-white/40" />
                                 <span>Consulta de predio</span>

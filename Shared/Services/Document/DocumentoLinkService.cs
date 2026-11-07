@@ -1,4 +1,5 @@
 using Coactivos_Predial.Shared.AppDbContext;
+using Coactivos_Predial.Shared.Services.Document.Enums;
 using Coactivos_Predial.Shared.Services.DocumentoFiles;
 using Coactivos_Predial.Shared.Services.SDatabase;
 using Microsoft.EntityFrameworkCore;
@@ -19,17 +20,16 @@ public sealed class DocumentoLinkService(TenantDbContext context, IConnectionSer
 
         var documento = await context.Documentos
             .AsNoTracking()
-            .Include(documento => documento.TipoDocumento)
-                .ThenInclude(tipo => tipo.Sector)
             .FirstOrDefaultAsync(s => s.Id == documentId);
 
+        // Un módulo no definido no tiene carpeta de almacenamiento asignada.
         if (documento == null
             || string.IsNullOrWhiteSpace(documento.Ruta)
-            || documento.TipoDocumento?.Sector is null)
+            || !Enum.IsDefined(documento.Modulo))
         {
             return null;
         }
-        var baseFolder = connectionService.GetStorageStringForSector(documento.TipoDocumento.Sector.Codigo);
+        var baseFolder = connectionService.GetStorageStringForModulo(documento.Modulo);
         if (!DocumentoFileService.TryResolvePath(baseFolder, documento.Ruta.Trim(), out _, out var filePath)
             || !File.Exists(filePath))
         {
@@ -37,7 +37,7 @@ public sealed class DocumentoLinkService(TenantDbContext context, IConnectionSer
         }
 
         return new DocumentoLinks(
-            $"/api/documentos/{documentId}/ver", 
+            $"/api/documentos/{documentId}/ver",
             $"/api/documentos/{documentId}/descargar"
         );
     }

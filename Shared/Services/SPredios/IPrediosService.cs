@@ -1,12 +1,14 @@
 using Coactivos_Predial.Shared.Models;
 using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.SPredios.Requests;
 using Coactivos_Predial.Shared.Services.SPredios.Responses;
+using Coactivos_Predial.Shared.Services.SPDios.Responses;
 
 namespace Coactivos_Predial.Shared.Services.SPredios;
 
 public interface IPrediosService
 {
-    Task<Result> AgregarDocumento(Documentos documento);
+    Task<Result> AgregarDocumento(AgregarDocumentoRequest request);
 
     Task<Result> DeleteDocs(int id);
 

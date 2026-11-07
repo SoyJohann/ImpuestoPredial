@@ -4,28 +4,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Coactivos_Predial.Shared.AppDbContext;
 
-/// <summary>
-/// Define el esquema de datos de un municipio: catastro, propietarios, procesos,
-/// parámetros y documentos. La base se selecciona por el proveedor del municipio.
-/// </summary>
 public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbContext(options)
 {
-    public DbSet<Maestro> Maestro => Set<Maestro>();
+    public DbSet<Predio> Predio => Set<Predio>();
     public DbSet<Propietarios> Propietarios => Set<Propietarios>();
     public DbSet<TiposIdentificacion> TiposIdentificacion => Set<TiposIdentificacion>();
-    public DbSet<PrediosProp> PrediosProp => Set<PrediosProp>();
     public DbSet<Parametros> Parametros => Set<Parametros>();
     public DbSet<Importados> Importados => Set<Importados>();
     public DbSet<Documentos> Documentos => Set<Documentos>();
-    public DbSet<Sectores> Sectores => Set<Sectores>();
-    public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
     public DbSet<Procesos> Procesos => Set<Procesos>();
+    public DbSet<Contribuyente> Contribuyentes => Set<Contribuyente>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Maestro>()
+        modelBuilder.Entity<Predio>()
             .HasOne(predio => predio.Propietario)
             .WithMany(propietario => propietario.Predios)
             .HasForeignKey(predio => predio.PropietarioId)
@@ -43,7 +37,7 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
             .HasForeignKey(relacion => relacion.PropietarioId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Maestro>()
+        modelBuilder.Entity<Predio>()
             .HasIndex(predio => predio.Codigo)
             .IsUnique();
 
@@ -57,14 +51,6 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
             .HasForeignKey(propietario => propietario.TipoId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Sectores>()
-            .HasIndex(sector => sector.Codigo)
-            .IsUnique();
-
-        modelBuilder.Entity<TipoDocumento>()
-            .HasIndex(tipo => new { tipo.SectorId, tipo.Codigo })
-            .IsUnique();
-
         modelBuilder.Entity<Documentos>()
             .HasOne(documento => documento.Predio)
             .WithMany(predio => predio.Documentos)
@@ -73,10 +59,21 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Documentos>()
-            .HasOne(documento => documento.TipoDocumento)
-            .WithMany(tipo => tipo.Documentos)
-            .HasForeignKey(documento => documento.TipoDocumentoId)
+            .Property(documento => documento.Modulo)
+            .HasConversion<int>();
+
+        modelBuilder.Entity<Contribuyente>()
+            .HasOne(c => c.Propietario)
+            .WithMany(p => p.Contribuyentes)
+            .HasForeignKey(c => c.PropietarioId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Contribuyente>()
+            .Property(c => c.Estado)
+            .HasConversion<int>();
+
+        modelBuilder.Entity<Documentos>()
+            .HasIndex(d => new { d.Modulo, d.IsActive });
 
         modelBuilder.Entity<Procesos>()
             .Property(proceso => proceso.TipoProceso)
@@ -85,10 +82,30 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             foreach (var property in entityType.GetProperties().Where(property =>
-                         property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?)))
+                         (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+                         && property.Name != nameof(EntityWithTraceability.CreatedAt)
+                         && property.Name != nameof(EntityWithTraceability.UpdatedAt)))
             {
                 property.SetColumnType("date");
             }
+
+            if (!typeof(EntityWithTraceability).IsAssignableFrom(entityType.ClrType))
+            {
+                continue;
+            }
+
+            var entity = modelBuilder.Entity(entityType.ClrType);
+            entity.Property(nameof(EntityWithTraceability.CreatedAt))
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("now()");
+            entity.Property(nameof(EntityWithTraceability.UpdatedAt))
+                .HasColumnType("timestamp with time zone");
+            entity.Property(nameof(EntityWithTraceability.CreatedBy))
+                .HasDefaultValue(1);
+            entity.Property(nameof(EntityWithTraceability.UpdatedBy))
+                .HasDefaultValue(1);
+            entity.Property(nameof(EntityWithTraceability.IsActive))
+                .HasDefaultValue(true);
         }
     }
 }

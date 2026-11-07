@@ -1,4 +1,5 @@
 using Coactivos_Predial.Shared.Services.Common;
+using Coactivos_Predial.Shared.Services.Document.Enums;
 using Coactivos_Predial.Shared.Services.FileHandler.Responses;
 
 namespace Coactivos_Predial.Shared.Services.FileHandler;
@@ -9,7 +10,7 @@ public partial class ArchivoService
         ResultExecution.ExecuteAsync(async () =>
         {
             var archivos = new List<ArchivoDto>();
-            string directoryPath = connectionService.GetStorageString("FileStorageTemplate");
+            string directoryPath = connectionService.GetStorageStringForTipo(Modulo.Predial);
 
             if (Path.IsPathRooted(partialFileName))
             {

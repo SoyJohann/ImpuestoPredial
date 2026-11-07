@@ -1,11 +1,11 @@
-namespace Coactivos_Predial.Shared.Services.SDatabase
+using Coactivos_Predial.Shared.Services.Document.Enums;
+
+namespace Coactivos_Predial.Shared.Services.SDatabase;
+
+public interface IConnectionService
 {
-    public interface IConnectionService
-    {
-        string GetConnectionString(string municipio);
-        string GetStorageString(string filestorage);
-        string GetStorageStringForSector(string? sectorCode);
-        string GetStorageStringForMunicipio(string? municipio);
-        string GetStorageStringForMunicipio(string? municipio, string? sectorCode);
-    }
+    string GetConnectionString(string municipio);
+    string GetStorageStringForModulo(Modulo tipo);
+    string GetStorageStringForTipo(Modulo tipo);
+    string GetStorageStringForMunicipio(string? municipio, Modulo tipo);
 }

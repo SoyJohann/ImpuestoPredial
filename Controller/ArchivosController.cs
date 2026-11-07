@@ -1,3 +1,4 @@
+using Coactivos_Predial.Shared.Services.Document.Enums;
 using Coactivos_Predial.Shared.Services.SDatabase;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,7 @@ namespace Coactivos_Predial.Controller
         {
             try
             {
-                var baseFolder = _connectionService.GetStorageString("FileStorageTemplate");
+                var baseFolder = _connectionService.GetStorageStringForTipo(Modulo.Predial);
                 var safeName = Path.GetFileName(fileName);
                 if (!string.Equals(safeName, fileName, StringComparison.Ordinal)) return NotFound();
                 var fullBase = Path.GetFullPath(baseFolder);

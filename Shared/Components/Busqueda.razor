@@ -14,11 +14,11 @@
                          @bind-Value="pcedula"
                          Mono="true"
                          Placeholder="Cédula o NIT"
-                         Autocomplete="off" />
+                         Autocomplete="off"/>
             </UiField>
         </div>
         <UiButton ButtonType="submit" Variant="primary">
-            <UiIcon Name="search" />
+            <UiIcon Name="search"/>
             Buscar
         </UiButton>
     </form>
@@ -43,7 +43,7 @@
                             <td class="font-numeric">@item.CodigoPredial</td>
                             <td>@item.Nombre</td>
                             <td>@item.Direccion</td>
-                            <td class="num">@item.Avaluo.ToString("C")</td>
+                            <td class="num">@((item.Avaluo ?? 0).ToString("C"))</td>
                         </tr>
                     }
                 }
@@ -59,11 +59,11 @@
         </UiTable>
     </div>
 
-    <UiPager Page="paginaActual" PageSize="5" TotalItems="prediosEncontrados.Count" OnPageChanged="CambiarPagina" />
+    <UiPager Page="paginaActual" PageSize="5" TotalItems="prediosEncontrados.Count" OnPageChanged="CambiarPagina"/>
     <div class="mt-4 flex flex-wrap justify-end gap-2">
         <UiButton Variant="secondary" OnClick="Cerrar">Cancelar</UiButton>
         <UiButton Variant="primary" OnClick="EnviarDatos" Disabled="@(predioSeleccionado is null)">
-            <UiIcon Name="check" />
+            <UiIcon Name="check"/>
             Seleccionar
         </UiButton>
     </div>
@@ -113,6 +113,7 @@
         {
             return;
         }
+
         var codigoPredial = predioSeleccionado.CodigoPredial;
         await busquedaService.GuardarCodigoSeleccionado(codigoPredial);
         if (OnSeleccionado.HasDelegate)
@@ -133,4 +134,5 @@
     {
         predioSeleccionado = item;
     }
+
 }

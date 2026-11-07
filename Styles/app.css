@@ -11,6 +11,10 @@
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
 
 @source "../Pages/PConsulta/**/*.razor";
+@source "../Pages/PInicio/**/*.razor";
+@source "../Pages/PInfractores/**/*.razor";
+@source "../Pages/PParametros/**/*.razor";
+@source "../Pages/PRep_Diario/**/*.razor";
 @source "../Pages/PLogin/LogIn.cshtml";
 @source "../Pages/_Host.cshtml";
 @source "../Shared/Components/Ui/**/*.razor";
@@ -73,6 +77,9 @@
   --color-warn-600: #b45309;
   --color-danger-600: #b42318;
   --color-ok-600: #2f7d4f;
+  /* Estado seleccionado en tarjetas de navegación (solicitud explícita de diseño). */
+  --color-select-600: #2563eb;
+  --color-select-50: #eff6ff;
 
   --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", "Cascadia Mono", monospace;

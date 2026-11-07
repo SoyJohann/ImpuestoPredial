@@ -90,15 +90,14 @@ namespace Coactivos_Predial.Database.EFMigrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Parametros");
+                    b.ToTable("Parametros", (string)null);
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Documentos", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("Id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
@@ -110,9 +109,24 @@ namespace Coactivos_Predial.Database.EFMigrations
                         .HasColumnType("text")
                         .HasColumnName("CodigoPredial");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int>("CreatedBy")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<DateTime?>("Fecha")
                         .HasColumnType("date")
                         .HasColumnName("Fecha");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -127,17 +141,23 @@ namespace Coactivos_Predial.Database.EFMigrations
                         .HasColumnType("text")
                         .HasColumnName("Ruta");
 
-                    b.Property<int>("TipoDocumentoId")
+                    b.Property<int>("TipoDocumento")
                         .HasColumnType("integer")
                         .HasColumnName("TipoDocumentoId");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UpdatedBy")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
 
                     b.HasKey("Id");
 
                     b.HasIndex("PredioId");
 
-                    b.HasIndex("TipoDocumentoId");
-
-                    b.ToTable("Documentos");
+                    b.ToTable("Documentos", (string)null);
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Importados", b =>
@@ -195,7 +215,7 @@ namespace Coactivos_Predial.Database.EFMigrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Importados");
+                    b.ToTable("Importados", (string)null);
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Maestro", b =>
@@ -258,7 +278,7 @@ namespace Coactivos_Predial.Database.EFMigrations
 
                     b.HasIndex("PropietarioId");
 
-                    b.ToTable("Maestro");
+                    b.ToTable("Maestro", (string)null);
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.PrediosProp", b =>
@@ -281,7 +301,7 @@ namespace Coactivos_Predial.Database.EFMigrations
 
                     b.HasIndex("PropietarioId");
 
-                    b.ToTable("PrediosProp");
+                    b.ToTable("PrediosProp", (string)null);
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Procesos", b =>
@@ -385,7 +405,7 @@ namespace Coactivos_Predial.Database.EFMigrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Procesos");
+                    b.ToTable("Procesos", (string)null);
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Propietarios", b =>
@@ -426,73 +446,7 @@ namespace Coactivos_Predial.Database.EFMigrations
                     b.HasIndex("TipoId", "Documento")
                         .IsUnique();
 
-                    b.ToTable("Propietarios");
-                });
-
-            modelBuilder.Entity("Coactivos_Predial.Shared.Models.Sectores", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("Id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Activo")
-                        .HasColumnType("boolean")
-                        .HasColumnName("Activo");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("Codigo");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("Nombre");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Codigo")
-                        .IsUnique();
-
-                    b.ToTable("Sectores");
-                });
-
-            modelBuilder.Entity("Coactivos_Predial.Shared.Models.TipoDocumento", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("Id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Activo")
-                        .HasColumnType("boolean")
-                        .HasColumnName("Activo");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("Codigo");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("Nombre");
-
-                    b.Property<int>("SectorId")
-                        .HasColumnType("integer")
-                        .HasColumnName("SectorId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SectorId", "Codigo")
-                        .IsUnique();
-
-                    b.ToTable("TiposDocumento");
+                    b.ToTable("Propietarios", (string)null);
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.TiposIdentificacion", b =>
@@ -509,7 +463,7 @@ namespace Coactivos_Predial.Database.EFMigrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TiposIdentificacion");
+                    b.ToTable("TiposIdentificacion", (string)null);
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Documentos", b =>
@@ -519,15 +473,7 @@ namespace Coactivos_Predial.Database.EFMigrations
                         .HasForeignKey("PredioId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Coactivos_Predial.Shared.Models.TipoDocumento", "TipoDocumento")
-                        .WithMany("Documentos")
-                        .HasForeignKey("TipoDocumentoId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Predio");
-
-                    b.Navigation("TipoDocumento");
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Maestro", b =>
@@ -571,17 +517,6 @@ namespace Coactivos_Predial.Database.EFMigrations
                     b.Navigation("TipoIdentificacion");
                 });
 
-            modelBuilder.Entity("Coactivos_Predial.Shared.Models.TipoDocumento", b =>
-                {
-                    b.HasOne("Coactivos_Predial.Shared.Models.Sectores", "Sector")
-                        .WithMany("TiposDocumento")
-                        .HasForeignKey("SectorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Sector");
-                });
-
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Maestro", b =>
                 {
                     b.Navigation("Copropietarios");
@@ -592,16 +527,6 @@ namespace Coactivos_Predial.Database.EFMigrations
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Propietarios", b =>
                 {
                     b.Navigation("Predios");
-                });
-
-            modelBuilder.Entity("Coactivos_Predial.Shared.Models.Sectores", b =>
-                {
-                    b.Navigation("TiposDocumento");
-                });
-
-            modelBuilder.Entity("Coactivos_Predial.Shared.Models.TipoDocumento", b =>
-                {
-                    b.Navigation("Documentos");
                 });
 
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.TiposIdentificacion", b =>

@@ -6,7 +6,7 @@ namespace Coactivos_Predial.Shared.Models;
 /// Representa un predio del maestro catastral. Los datos personales del titular
 /// se almacenan en <see cref="Propietarios"/> y se enlazan por <see cref="PropietarioId"/>.
 /// </summary>
-public class Maestro
+public class Predio
 {
     [Key]
     public int Id { get; set; }

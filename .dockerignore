@@ -1,0 +1,21 @@
+# Artefactos de construcción
+bin/
+obj/
+
+# Control de versiones y archivos locales
+.git/
+.gitignore/
+
+# Pruebas: no compilan dentro de la imagen de producción
+**/Coactivos_Predial.Tests/
+
+# Editor y sistema
+.vs/
+.idea/
+*.user
+.DS_Store
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore

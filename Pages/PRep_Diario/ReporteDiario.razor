@@ -1,160 +1,162 @@
 ﻿@page "/ReporteDiario"
 
-@using Coactivos_Predial.Models;
-@using Coactivos_Predial.Shared.Models;
-@using Coactivos_Predial.Shared.Services;
-@using System.Diagnostics
 @using Coactivos_Predial.Shared.Services.SPredios
 @using Coactivos_Predial.Shared.Services.SPredios.Responses
-@inject NavigationManager NavigationManager
+
+@rendermode InteractiveServer
 @inject IPrediosService Rep_resolServices;
 
-<div class="container-fluid my-4">
-    <!-- Header y Filtros -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <h4 class="card-title text-primary mb-3">
-                <i class="bi bi-calendar-check me-2"></i>Reporte Diario de Documentos
-            </h4>
-            <div class="row g-3 align-items-end">
-                <div class="col-sm-6 col-md-3 col-lg-2">
-                    <label class="form-label fw-bold small text-muted">Desde Fecha</label>
-                    <input type="date" class="form-control" @bind="desde" />
-                </div>
-                <div class="col-sm-6 col-md-3 col-lg-2">
-                    <label class="form-label fw-bold small text-muted">Hasta Fecha</label>
-                    <input type="date" class="form-control" @bind="hasta" />
-                </div>
-                <div class="col-sm-12 col-md-2">
-                    <button type="button" class="btn btn-primary w-100" @onclick="Carga_datos">
-                        <i class="bi bi-search me-1"></i> Consultar
-                    </button>
-                </div>
+<PageTitle>Reporte diario</PageTitle>
 
-                <!-- Tarjetas de Resumen KPI -->
-                <div class="col-sm-6 col-md-2">
-                    <div class="card border-0 bg-light shadow-sm">
-                        <div class="card-body p-2 d-flex align-items-center">
-                            <div class="fs-2 text-primary me-3 ps-2">
-                                <i class="bi bi-card-checklist"></i>
-                            </div>
-                            <div>
-                                <div class="text-muted small">Items</div>
-                                <div class="fw-bold fs-5">@itemx.Item</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<div>
+    <h1 class="text-[22px] font-semibold leading-7 text-ink-900">Reporte diario de documentos</h1>
+    <p class="mt-1 text-sm text-ink-500">Documentos cargados por predio en el rango de fechas seleccionado.</p>
+</div>
 
-                <div class="col-sm-6 col-md-2">
-                    <div class="card border-0 bg-light shadow-sm">
-                        <div class="card-body p-2 d-flex align-items-center">
-                            <div class="fs-2 text-danger me-3 ps-2">
-                                <i class="bi bi-file-earmark-pdf"></i>
-                            </div>
-                            <div>
-                                <div class="text-muted small">PDFs</div>
-                                <div class="fw-bold fs-5">@itemx.Num</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="mt-4">
+    <UiPanel Title="Filtros" Subtitle="Seleccione el rango de fechas y consulte.">
+        <form class="flex flex-col gap-3 sm:flex-row sm:items-end" @onsubmit="Carga_datos" @onsubmit:preventDefault>
+            <UiField Label="Desde" For="reporte-desde">
+                <input id="reporte-desde"
+                       type="date"
+                       @bind="desde"
+                       class="@InputCss" />
+            </UiField>
+            <UiField Label="Hasta" For="reporte-hasta">
+                <input id="reporte-hasta"
+                       type="date"
+                       @bind="hasta"
+                       class="@InputCss" />
+            </UiField>
+            <UiButton ButtonType="submit" Variant="primary" Loading="isLoading">
+                <UiIcon Name="search" />
+                Consultar
+            </UiButton>
+        </form>
+    </UiPanel>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(errorCarga))
+{
+    <div class="mt-4 rounded-ui border border-danger-600/20 bg-danger-600/5 px-4 py-2.5 text-sm text-danger-600" role="alert">
+        @errorCarga
     </div>
+}
 
-    <!-- Tabla de Resultados -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0 fs-6"><i class="bi bi-journal-text me-2"></i>Informe Documentos Cargados</h5>
-            <span class="badge bg-light text-dark">Total: @Itemlist.Count</span>
-        </div>
-        <div class="card-body p-0">
+<div class="mt-4">
+    <UiPanel Title="Documentos cargados" Subtitle="@Resumen" BodyClass="p-0">
+        <Actions>
+            <UiBadge Variant="neutral">Registros: @itemx.Item</UiBadge>
+            <UiBadge Variant="accent">PDFs: @itemx.Num</UiBadge>
+        </Actions>
+
+        <ChildContent>
             @if (isLoading)
             {
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2 text-muted">Cargando reporte...</p>
+                <div class="px-4">
+                    <UiLoading Text="Consultando el reporte…" />
                 </div>
             }
-            else if (Itemlist == null || !Itemlist.Any())
+            else if (!consultado)
             {
-                <p class="text-muted text-center py-4 my-0">No se encontraron documentos registrados en el rango seleccionado.</p>
+                <UiEmpty Icon="calendar"
+                         Title="Seleccione un rango de fechas"
+                         Message="El reporte muestra los documentos cargados por predio dentro del rango consultado." />
+            }
+            else if (Itemlist.Count == 0)
+            {
+                <UiEmpty Icon="file-text"
+                         Title="Sin documentos en el rango"
+                         Message="No se encontraron documentos registrados entre las fechas seleccionadas." />
             }
             else
             {
-                <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
-                    <table class="table table-striped table-hover align-middle mb-0">
-                        <thead class="table-light sticky-top">
+                <UiTable Class="min-w-[560px]">
+                    <Header>
+                        <tr>
+                            <th>No. predial</th>
+                            <th>Fecha</th>
+                            <th class="text-right">Documentos cargados</th>
+                        </tr>
+                    </Header>
+                    <ChildContent>
+                        @foreach (var documento in Itemlist)
+                        {
                             <tr>
-                                <th>No. Predial</th>
-                                <th>Fecha</th>
-                                <th class="text-center">No. Documentos Cargados</th>
+                                <td class="font-numeric">@documento.CodigoPredial</td>
+                                <td class="font-numeric">@documento.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td class="num">@documento.Num</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var doc in Itemlist)
-                            {
-                                <tr>
-                                    <td class="fw-bold">@doc.CodigoPredial</td>
-                                    <td>@doc.Fecha.ToString("dd/MM/yyyy")</td>
-                                    <td class="text-center">
-                                        <span class="badge bg-info text-dark fs-6">@doc.Num</span>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                        }
+                    </ChildContent>
+                </UiTable>
             }
-        </div>
-    </div>
+        </ChildContent>
+    </UiPanel>
 </div>
 
 @code {
-    private bool mostrarModal = false;
-    public List<DocumentoDiarioDto> Itemlist { get; set; } = new List<DocumentoDiarioDto>();
-    public ResumenPdfsDto itemx { get; set; } = new ResumenPdfsDto(0, 0);
-    public DateTime desde;
-    public DateTime hasta;
+    private const string InputCss = "h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 transition-colors duration-150 hover:border-ink-500/40 focus:border-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-700/20";
 
-    IQueryable<DocumentoDiarioDto> data;
-    bool isLoading = false;
-    public int num_ss;
+    private List<DocumentoDiarioDto> Itemlist { get; set; } = new();
+    private ResumenPdfsDto itemx { get; set; } = new(0, 0);
+    private DateTime desde;
+    private DateTime hasta;
+    private bool isLoading;
+    private bool consultado;
+    private string? errorCarga;
 
-    protected override async Task OnInitializedAsync()
+    private string Resumen => !consultado
+        ? "Sin consultar"
+        : Itemlist.Count switch
+        {
+            0 => "Sin registros",
+            1 => "1 registro",
+            _ => $"{Itemlist.Count} registros"
+        };
+
+    protected override void OnInitialized()
     {
-        desde = DateTime.Now;
-        hasta = DateTime.Now;
-    }
-
-    async Task ShowLoading()
-    {
-        isLoading = true;
-        await Task.Yield();
-        isLoading = false;
+        desde = DateTime.Today;
+        hasta = DateTime.Today;
     }
 
     private async Task Carga_datos()
     {
+        errorCarga = null;
+
+        if (desde.Date > hasta.Date)
+        {
+            errorCarga = "La fecha inicial no puede ser posterior a la fecha final.";
+            return;
+        }
+
+        isLoading = true;
         try
         {
-            await ShowLoading();
-            var listaResult = await Rep_resolServices.Lista_Diario(desde, hasta);
-            Itemlist = listaResult.Value ?? new List<DocumentoDiarioDto>();
-            data = Itemlist.AsQueryable();
-
-            var resumenResult = await Rep_resolServices.Pdfs_Resumen(desde, hasta);
-            itemx = resumenResult.Value ?? new ResumenPdfsDto(0, 0);
-
-            if (listaResult.IsFailure || resumenResult.IsFailure)
+            var listaResult = await Rep_resolServices.Lista_Diario(desde.Date, hasta.Date);
+            if (listaResult.IsFailure)
             {
-                Console.WriteLine($"Error al consultar el reporte diario: {listaResult.Error ?? resumenResult.Error}");
+                Itemlist.Clear();
+                itemx = new ResumenPdfsDto(0, 0);
+                consultado = true;
+                errorCarga = listaResult.Error ?? "No fue posible consultar el reporte diario.";
+                return;
             }
+
+            var resumenResult = await Rep_resolServices.Pdfs_Resumen(desde.Date, hasta.Date);
+            if (resumenResult.IsFailure)
+            {
+                errorCarga = resumenResult.Error ?? "No fue posible calcular el resumen de documentos.";
+            }
+
+            Itemlist = listaResult.Value ?? new List<DocumentoDiarioDto>();
+            itemx = resumenResult.Value ?? new ResumenPdfsDto(0, 0);
+            consultado = true;
         }
-        catch (Exception ex)
+        finally
         {
-            Console.WriteLine($"Error en getresoluciones: {ex.Message}");
+            isLoading = false;
         }
     }
 }

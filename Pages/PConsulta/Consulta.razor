@@ -27,7 +27,7 @@
             <div class="w-full flex-1">
                 <UiField Label="Código predial" For="codigo-predial" Help="Ingrese el código y presione Consultar.">
                     <UiInput Id="codigo-predial"
-                             @bind-Value="Predio.Codigo"
+                             @bind-Value="codigoPredial"
                              Mono="true"
                              Placeholder="Ej. 01-02-0034-0012-000"
                              Autocomplete="off"
@@ -54,7 +54,7 @@
         @errorBusqueda
     </div>
 }
-else if (busquedaRealizada && existe)
+else if (busquedaRealizada && !isLoading && Predio is null)
 {
     <div class="mt-4 rounded-ui border border-warn-600/20 bg-warn-600/5 px-4 py-2.5 text-sm text-warn-600" role="alert">
         No se encontró un predio con ese código. Verifique el dato e intente de nuevo.
@@ -71,7 +71,7 @@ else if (!busquedaRealizada)
     </div>
 }
 
-@if (busquedaRealizada && !existe)
+@if (busquedaRealizada && Predio is { } predio)
 {
     <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <!-- Columna izquierda: datos del predio y propietarios -->
@@ -80,41 +80,41 @@ else if (!busquedaRealizada)
                 <dl class="divide-y divide-line">
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Propietario</dt>
-                        <dd class="truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(Predio.PropietarioNombre) ? "Sin dato" : Predio.PropietarioNombre)</dd>
+                        <dd class="truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(predio.PropietarioNombre) ? "Sin dato" : predio.PropietarioNombre)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Cédula / NIT</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(Predio.PropietarioDocumento) ? "—" : Predio.PropietarioDocumento)</dd>
+                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(predio.PropietarioDocumento) ? "—" : predio.PropietarioDocumento)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Matrícula</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(Predio.Matricula) ? "—" : Predio.Matricula)</dd>
+                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(predio.Matricula) ? "—" : predio.Matricula)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Dirección</dt>
-                        <dd class="truncate text-right text-sm text-ink-900" title="@Predio.Direccion">@(string.IsNullOrWhiteSpace(Predio.Direccion) ? "—" : Predio.Direccion)</dd>
+                        <dd class="truncate text-right text-sm text-ink-900" title="@predio.Direccion">@(string.IsNullOrWhiteSpace(predio.Direccion) ? "—" : predio.Direccion)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Área terreno</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(Predio.AreaTerreno?.ToString("N0") ?? "—")</dd>
+                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(predio.AreaTerreno?.ToString("N0") ?? "—")</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Área construida</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(Predio.AreaConstruida?.ToString("N0") ?? "—")</dd>
+                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(predio.AreaConstruida?.ToString("N0") ?? "—")</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Zona / Estrato</dt>
                         <dd class="truncate text-right text-sm text-ink-900">
-                            @(string.IsNullOrWhiteSpace(Predio.Zona) ? "—" : Predio.Zona)
-                            @if (!string.IsNullOrWhiteSpace(Predio.Estrato))
+                            @(string.IsNullOrWhiteSpace(predio.Zona) ? "—" : predio.Zona)
+                            @if (!string.IsNullOrWhiteSpace(predio.Estrato))
                             {
-                                <span class="text-ink-500"> / @Predio.Estrato</span>
+                                <span class="text-ink-500"> / @predio.Estrato</span>
                             }
                         </dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Condición</dt>
-                        <dd class="truncate text-right text-sm font-medium @(Predio.Exento == true ? "text-warn-600" : "text-ok-600")">@(string.IsNullOrWhiteSpace(nentidad) ? "Sin dato" : nentidad)</dd>
+                        <dd class="truncate text-right text-sm font-medium @(predio.Exento == true ? "text-warn-600" : "text-ok-600")">@(string.IsNullOrWhiteSpace(nentidad) ? "Sin dato" : nentidad)</dd>
                     </div>
                     <div class="flex h-7 items-center justify-between gap-4">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Avalúo</dt>
@@ -164,7 +164,7 @@ else if (!busquedaRealizada)
         <!-- Columna derecha: documentos -->
         <UiPanel Title="Documentos" Subtitle="@DocumentosResumen" BodyClass="p-0">
             <Actions>
-                <UiButton Variant="ghost" Size="sm"  Title="Actualizar" AriaLabel="Actualizar documentos">
+                <UiButton Variant="ghost" Size="sm" OnClick="ActualizarDocumentos" Title="Actualizar" AriaLabel="Actualizar documentos">
                     <UiIcon Name="refresh" />
                 </UiButton>
                 <UiButton Variant="primary" Size="sm" OnClick="AbrirModalSubir">
@@ -193,7 +193,7 @@ else if (!busquedaRealizada)
                         <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
                                class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
                     </div>
-                    <UiTable>
+                    <UiTable Class="max-h-[calc(100vh-380px)] min-h-[160px] overscroll-contain">
                         <Header>
                             <tr>
                                 <th>Documento</th>
@@ -237,7 +237,6 @@ else if (!busquedaRealizada)
             </ChildContent>
         </UiPanel>
     </div>
-    <PdfViewerModal @ref="pdfViewerModal" />
 
     <!-- Procesos de cobro coactivo -->
     <div class="mt-4">
@@ -281,6 +280,9 @@ else if (!busquedaRealizada)
         </UiPanel>
     </div>
 }
+
+<!-- Visor de PDF (fuera del bloque del predio para que siempre exista) -->
+<PdfViewerModal @ref="pdfViewerModal" />
 
 <!-- Búsqueda por cédula -->
 <UiDialog Open="@mostrarModalBusqueda"
@@ -355,4 +357,3 @@ else if (!busquedaRealizada)
          Message="@(aviso ?? string.Empty)"
          Variant="ok"
          OnClose="CerrarAviso" />
-

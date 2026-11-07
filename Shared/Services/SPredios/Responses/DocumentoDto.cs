@@ -1,9 +1,9 @@
-namespace Coactivos_Predial.Shared.Services.SPredios.Responses;
+namespace Coactivos_Predial.Shared.Services.SPDios.Responses;
 
 /// <summary>Documento PDF asociado a un predio.</summary>
 public sealed record DocumentoDto(
     int Id,
-    int TipoDocumentoId,
+    Document.Enums.Modulo Modulo,
     int? PredioId,
     string? CodigoPredial,
     string Nombre,

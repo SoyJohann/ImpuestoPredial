@@ -40,7 +40,7 @@ namespace Coactivos_Predial.Pages.PLogin
             if (result.IsSuccess)
             {
                 mensaje = "Clave Correcta";
-                return Redirect("/Consultapage");
+                return Redirect("/Inicio");
             }
             else
             {

@@ -32,6 +32,7 @@
     <Folder Include="Pages\Rep_Coactivo\" />
     <Compile Remove="Coactivos_Predial.Tests/**/*.cs" />
     <Content Remove="Coactivos_Predial.Tests/**/*" />
+    <Folder Include="Shared\Services\Document\Reponses\" />
     <None Remove="Coactivos_Predial.Tests/**/*" />
     <EmbeddedResource Remove="Coactivos_Predial.Tests/**/*" />
   </ItemGroup>

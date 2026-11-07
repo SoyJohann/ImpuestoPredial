@@ -1,3 +1,4 @@
+using Coactivos_Predial.Shared.Services.Document.Enums;
 using Coactivos_Predial.Shared.Services.SDatabase;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -18,7 +19,7 @@ public sealed class ConnectionServiceTests
     {
         var service = new ConnectionService(Configuration(), new TenantProviderStub("Cimitarra"));
 
-        Assert.Equal("/home/johan/Cimitarra/Predial/", service.GetStorageStringForSector("PREDIAL"));
+        Assert.Equal("/home/johan/Cimitarra/Predial/", service.GetStorageStringForTipo(Modulo.Predial));
     }
 
     [Fact]
@@ -26,7 +27,7 @@ public sealed class ConnectionServiceTests
     {
         var service = new ConnectionService(Configuration(), new TenantProviderStub("Cimitarra"));
 
-        Assert.Equal("/home/johan/Cimitarra/IndustriaComercio/", service.GetStorageStringForSector("INDUSTRIA_COMERCIO"));
+        Assert.Equal("/home/johan/Cimitarra/IndustriaComercio/", service.GetStorageStringForTipo(Modulo.IndustriaComercio));
     }
 
     [Fact]
@@ -36,25 +37,25 @@ public sealed class ConnectionServiceTests
         var cimitarra = new ConnectionService(configuration, new TenantProviderStub("Cimitarra"));
         var otroMunicipio = new ConnectionService(configuration, new TenantProviderStub("OtroMunicipio"));
 
-        Assert.Equal("/home/johan/Cimitarra/Predial/", cimitarra.GetStorageStringForSector("PREDIAL"));
-        Assert.Equal("/home/johan/OtroMunicipio/Predial/", otroMunicipio.GetStorageStringForSector("PREDIAL"));
+        Assert.Equal("/home/johan/Cimitarra/Predial/", cimitarra.GetStorageStringForTipo(Modulo.Predial));
+        Assert.Equal("/home/johan/OtroMunicipio/Predial/", otroMunicipio.GetStorageStringForTipo(Modulo.Predial));
     }
 
     [Fact]
-    public void RemovesPredialDatabasePrefixFromStorageFolderName()
+    public void UsesTenantNameDirectlyAsStorageFolder()
     {
-        var service = new ConnectionService(Configuration(), new TenantProviderStub("Predial_Cimitarra"));
+        var service = new ConnectionService(Configuration(), new TenantProviderStub("Cimitarra"));
 
-        Assert.Equal("/home/johan/Cimitarra/Predial/", service.GetStorageStringForSector("PREDIAL"));
+        Assert.Equal("/home/johan/Cimitarra/Predial/", service.GetStorageStringForTipo(Modulo.Predial));
     }
 
     [Fact]
-    public void RejectsUnknownSectorAndMunicipalityPathSegments()
+    public void RejectsUnknownTipoAndMunicipalityPathSegments()
     {
         var service = new ConnectionService(Configuration(), new TenantProviderStub("../OtroMunicipio"));
 
-        Assert.Equal(string.Empty, service.GetStorageStringForSector("PREDIAL"));
-        Assert.Equal(string.Empty, service.GetStorageStringForMunicipio("Cimitarra", "DESCONOCIDO"));
+        Assert.Equal(string.Empty, service.GetStorageStringForTipo(Modulo.Predial));
+        Assert.Equal(string.Empty, service.GetStorageStringForMunicipio("Cimitarra", (Modulo)99));
     }
 
     private sealed class TenantProviderStub(string? municipio) : ITenantProvider

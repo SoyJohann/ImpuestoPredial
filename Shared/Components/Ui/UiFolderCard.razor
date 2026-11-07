@@ -1,0 +1,66 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+
+@if (!string.IsNullOrEmpty(Href))
+{
+    <a href="@Href" class="@CardCss">
+        <div class="flex items-center justify-between w-full">
+            <!-- Cargamos la imagen directamente desde wwwroot/Icons/ -->
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl @FolderBgColor shadow-sm overflow-hidden p-2">
+                <img src="/Icons/@(IconName).png" alt="@Title" class="h-full w-full object-contain" />
+            </span>
+            <UiIcon Name="chevron-right" Size="20"
+                    Class="text-ink-400 transition-colors duration-150 group-hover:text-select-600" />
+        </div>
+        
+        <div class="mt-4">
+            <span class="block text-lg font-bold leading-6 text-ink-900">@Title</span>
+            <span class="mt-1 block text-sm text-ink-500">@Description</span>
+        </div>
+    </a>
+}
+else
+{
+    <div aria-disabled="true" tabindex="-1" class="@CardCss">
+        <div class="flex items-center justify-between w-full">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl @FolderBgColor opacity-80 overflow-hidden p-2">
+                <img src="/Icons/@(IconName).png" alt="@Title" class="h-full w-full object-contain" />
+            </span>
+            @if (!string.IsNullOrEmpty(Badge))
+            {
+                <span class="shrink-0">
+                    <UiBadge>@Badge</UiBadge>
+                </span>
+            }
+        </div>
+        
+        <div class="mt-4">
+            <span class="block text-lg font-bold leading-6 text-ink-900">@Title</span>
+            <span class="mt-1 block text-sm text-ink-500">@Description</span>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public string? Href { get; set; }
+    [Parameter] public string? Badge { get; set; }
+    [Parameter] public string IconName { get; set; } = "folder";
+    [Parameter] public bool Selected { get; set; }
+    [Parameter] public string Variant { get; set; } = "amber";
+
+    private string FolderBgColor => Variant switch
+    {
+        "blue" => "bg-blue-100",
+        "green" => "bg-emerald-100",
+        _ => "bg-amber-100"
+    };
+
+    private string CardCss => Selected
+        ? "group flex flex-col justify-between rounded-2xl border-2 border-select-600 bg-select-50 p-6 shadow-sm ring-1 ring-select-600 transition-all min-h-[180px]"
+        : string.IsNullOrEmpty(Href)
+            ? "flex flex-col justify-between rounded-2xl border border-line bg-surface p-6 shadow-sm transition-all min-h-[180px]"
+            : "group flex cursor-pointer flex-col justify-between rounded-2xl border border-line bg-surface p-6 shadow-sm transition-all " +
+              "hover:border-select-400 hover:bg-slate-50/50 hover:shadow-md " +
+              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-select-600 min-h-[180px]";
+}

@@ -1,4 +1,4 @@
-using System;
+using Coactivos_Predial.Shared.Services.Document.Enums;
 using Microsoft.Extensions.Configuration;
 
 namespace Coactivos_Predial.Shared.Services.SDatabase
@@ -21,23 +21,22 @@ namespace Coactivos_Predial.Shared.Services.SDatabase
             return template.Replace("{Database}", municipio);
         }
 
-        public string GetStorageString(string filestorage)
-        {
-            return GetStorageStringForSector("PREDIAL");
-        }
+        public string GetStorageStringForModulo(Modulo tipo) =>
+            GetStorageStringForMunicipio(_tenantProvider.Municipio, tipo);
 
-        public string GetStorageStringForSector(string? sectorCode)
-        {
-            return GetStorageStringForMunicipio(_tenantProvider.Municipio, sectorCode);
-        }
+        public string GetStorageStringForTipo(Modulo tipo) =>
+            GetStorageStringForMunicipio(_tenantProvider.Municipio, tipo);
 
-        public string GetStorageStringForMunicipio(string? municipio)
+        public string GetStorageStringForMunicipio(string? municipio, Modulo tipo)
         {
-            return GetStorageStringForMunicipio(municipio, "PREDIAL");
-        }
+            var sectorFolder = tipo switch
+            {
+                Modulo.Predial => "Predial",
+                Modulo.IndustriaComercio => "IndustriaComercio",
+                _ => null
+            };
+            if (sectorFolder is null) return string.Empty;
 
-        public string GetStorageStringForMunicipio(string? municipio, string? sectorCode)
-        {
             if (string.IsNullOrWhiteSpace(municipio)
                 || municipio is "." or ".."
                 || municipio.Contains('/')
@@ -46,27 +45,10 @@ namespace Coactivos_Predial.Shared.Services.SDatabase
                 return string.Empty;
             }
 
-            var sectorFolder = sectorCode?.Trim().ToUpperInvariant() switch
-            {
-                "PREDIAL" => "Predial",
-                "INDUSTRIA_COMERCIO" => "IndustriaComercio",
-                _ => null
-            };
-            if (sectorFolder is null) return string.Empty;
-
+            // El nombre de la base municipal debe estar limpio de prefijos
+            // técnicos (p. ej. "Cimitarra", no "Predial_Cimitarra"): la misma
+            // cadena define la base y la carpeta de almacenamiento.
             var municipalityFolder = municipio.Trim();
-            const string predialDatabasePrefix = "Predial_";
-            if (municipalityFolder.StartsWith(predialDatabasePrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                municipalityFolder = municipalityFolder[predialDatabasePrefix.Length..];
-            }
-            if (string.IsNullOrWhiteSpace(municipalityFolder)
-                || municipalityFolder is "." or ".."
-                || municipalityFolder.Contains('/')
-                || municipalityFolder.Contains('\\'))
-            {
-                return string.Empty;
-            }
 
             var template = _configuration["FileStorageTemplate"] ?? string.Empty;
             return template

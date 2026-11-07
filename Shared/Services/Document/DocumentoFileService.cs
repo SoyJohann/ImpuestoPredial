@@ -1,4 +1,5 @@
 using Coactivos_Predial.Shared.AppDbContext;
+using Coactivos_Predial.Shared.Services.Document.Enums;
 using Coactivos_Predial.Shared.Services.SDatabase;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,14 +27,14 @@ public sealed class DocumentoFileService : IDocumentoFileService
     {
         var documento = await _tenantDb.Documentos!
             .AsNoTracking()
-            .Include(documento => documento.TipoDocumento)
-                .ThenInclude(tipo => tipo.Sector)
             .FirstOrDefaultAsync(documento => documento.Id == id, cancellationToken);
+
+        // Un módulo no definido no tiene carpeta de almacenamiento asignada.
         if (documento is null
             || string.IsNullOrWhiteSpace(documento.Ruta)
-            || documento.TipoDocumento?.Sector is null) return null;
+            || !Enum.IsDefined(documento.Modulo)) return null;
 
-        var baseFolder = _connectionService.GetStorageStringForSector(documento.TipoDocumento.Sector.Codigo);
+        var baseFolder = _connectionService.GetStorageStringForModulo(documento.Modulo);
         if (!TryResolvePath(baseFolder, documento.Ruta, out var fileName, out var fullPath)) return null;
         return new DocumentoFile(documento.Id, documento.Nombre, fullPath);
     }

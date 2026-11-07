@@ -1,18 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Coactivos_Predial.Shared.Services.Document.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Coactivos_Predial.Shared.Models;
 
 /// <summary>
 /// Representa un archivo documental clasificado y asociado a un predio cuando se pudo identificarlo.
 /// </summary>
-[Table("Documentos")]
-public class Documentos
+public class Documentos : EntityWithTraceability
 {
-    [Column("Id")]
-    public int Id { get; set; }
-
-    [Column("TipoDocumentoId")]
-    public int TipoDocumentoId { get; set; }
+    [Column("Modulo")]
+    public Modulo Modulo { get; set; } = Modulo.Predial;
 
     [Column("PredioId")]
     public int? PredioId { get; set; }
@@ -30,12 +27,6 @@ public class Documentos
     [Column("Ruta")]
     public string? Ruta { get; set; }
 
-    [Column("Archivo")]
-    public string? Archivo { get; set; }
-
-    [ForeignKey(nameof(TipoDocumentoId))]
-    public TipoDocumento TipoDocumento { get; set; } = null!;
-
     [ForeignKey(nameof(PredioId))]
-    public Maestro? Predio { get; set; }
+    public Predio? Predio { get; set; }
 }

@@ -1,0 +1,25 @@
+@page "/Inicio"
+@using Coactivos_Predial.Shared.Components.Ui
+
+@rendermode InteractiveServer
+
+<PageTitle>Inicio</PageTitle>
+
+<div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight text-ink-900">Módulos</h1>
+    <p class="mt-1 text-sm text-ink-500">Seleccione un módulo para gestionar sus documentos.</p>
+</div>
+
+<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <UiFolderCard Title="Predial"
+                  Description="Gestione los documentos de impuesto predial."
+                  Href="/Consultapage"
+                  Variant="amber"
+                  IconName="Predial" />
+
+    <UiFolderCard Title="Industria y Comercio"
+                  Description="Gestione los documentos de industria y comercio."
+                  Badge="En preparación"
+                  Variant="blue"
+                  IconName="IndustriaYComercio" />
+</div>

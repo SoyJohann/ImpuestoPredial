@@ -1,367 +1,330 @@
 ﻿@page "/Parametrospage"
 
-@using Coactivos_Predial.Models;
 @using Coactivos_Predial.Shared.Services.SParametros;
 @using Coactivos_Predial.Shared.Services.SParametros.Responses;
-@using System.Reflection;
-@inject IJSRuntime JSRuntime
-@inject IParametroService ParametroService;
+
 @rendermode InteractiveServer
+@inject IParametroService ParametroService;
 
-<div class="container-fluid">
-    <div class="row">
-        <!-- left column -->
-        <div class="col-md-12">
-            <div class="card card-primary">
-                <div class="card-header p-0" style="background-color:#112366; height: 31px ">
-                    <h5 class="card-title ms-3 text-white">Parámetros Del Sistema</h5>
-                </div>
-                <!-- /.card-header -->
-                <!-- form start -->
-                <EditForm Model="@param_obj">
-                    <ul class="nav nav-tabs" id="custom-content-below-tab" role="tablist">
-                        <li class="nav-item">
-                            <button type="button" class="nav-link @(tab1 ? "active" : "")" id="pestañaLiquidacion" @onclick="() => displayTabs(1)">Liquidación</button>
-                        </li>
-                        <li class="nav-item">
-                            <button type="button" class="nav-link @(tab3 ? "active" : "")" id="pestañaValorAdicional" @onclick="() => displayTabs(3)">Valor Adicional</button>
-                        </li>
-                    </ul>
+<PageTitle>Parámetros del sistema</PageTitle>
 
-                    @if (tab1)
+<div>
+    <h1 class="text-[22px] font-semibold leading-7 text-ink-900">Parámetros del sistema</h1>
+    <p class="mt-1 text-sm text-ink-500">Configuración institucional, de liquidación y valores adicionales.</p>
+</div>
+
+<div class="mt-4">
+    <UiPanel Title="Parámetros" Subtitle="Edite los datos del municipio y los estados del proceso." BodyClass="p-0">
+        <div class="border-b border-line px-4 pt-2">
+            <div class="flex gap-1">
+                <button type="button" class="@TabClass(tab1)" @onclick="() => displayTabs(1)">Liquidación</button>
+                <button type="button" class="@TabClass(tab3)" @onclick="() => displayTabs(3)">Valor adicional</button>
+            </div>
+        </div>
+
+        @if (tab1)
+        {
+            <div class="p-4">
+                <form class="space-y-4" @onsubmit="Editparm" @onsubmit:preventDefault>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <UiField Label="Secretaría" For="param-nombre" Required="true">
+                            <UiInput Id="param-nombre" @bind-Value="param_obj.Nombre" MaxLength="80" />
+                        </UiField>
+                        <UiField Label="Ciudad" For="param-ciudad" Required="true">
+                            <UiInput Id="param-ciudad" @bind-Value="param_obj.Ciudad" MaxLength="40" />
+                        </UiField>
+                        <UiField Label="Dirección" For="param-direccion" Required="true">
+                            <UiInput Id="param-direccion" @bind-Value="param_obj.Direccion" MaxLength="60" />
+                        </UiField>
+                        <UiField Label="NIT" For="param-nit">
+                            <UiInput Id="param-nit" @bind-Value="param_obj.Nit" MaxLength="15" Mono="true" />
+                        </UiField>
+                        <UiField Label="Correo" For="param-correo">
+                            <UiInput Id="param-correo" @bind-Value="param_obj.Correo" Type="email" MaxLength="60" />
+                        </UiField>
+                        <UiField Label="Teléfono" For="param-telefono">
+                            <UiInput Id="param-telefono" @bind-Value="param_obj.Telefono" MaxLength="15" InputMode="tel" />
+                        </UiField>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
                     {
-                        <div class="tab-content" id="custom-content-below-tabContent">
-                            <div class="tab-pane fade show active" id="contenidoLiquidacion" role="tabpanel">
-                                <div class="card-body">
-                                    <hr style="background-color:ghostwhite; color:lightgray;" size="3">
-                                    <div class="row mb-2">
-                                        <div class="col-sm-5">
-                                            <div class="form-group">
-                                                <label style="font-size:12px">Secretaría</label>
-                                                <input type="text" maxlength="80" class="form-control col-md-7 col-auto" style="font-weight: bold;" @bind="param_obj.Nombre">
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-5">
-                                            <div class="form-group">
-                                                <label style="font-size:12px">Ciudad</label>
-                                                <input type="text" maxlength="40" class="form-control" @bind="param_obj.Ciudad">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-sm-4">
-                                            <div class="form-group">
-                                                <label style="font-size:12px">Dirección</label>
-                                                <input type="text" maxlength="60" @bind="param_obj.Direccion" class="form-control col-auto">
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-4">
-                                            <div class="form-group">
-                                                <label style="font-size:12px">Nit</label>
-                                                <input type="text" maxlength="15" @bind="param_obj.Nit" class="form-control col-auto">
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-4">
-                                            <div class="form-group">
-                                                <label style="font-size:12px">Correo</label>
-                                                <input type="text" maxlength="60" @bind="param_obj.Correo" class="form-control">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-sm-4">
-                                            <div class="form-group">
-                                                <label style="font-size:12px">Teléfono</label>
-                                                <input type="text" maxlength="15" @bind="param_obj.Telefono" class="form-control">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="rounded-ui border border-danger-600/20 bg-danger-600/5 px-3 py-2 text-sm text-danger-600" role="alert">
+                            @errorMessage
                         </div>
                     }
 
-                    @if (tab3)
+                    <div class="flex justify-end">
+                        <UiButton ButtonType="submit" Variant="primary" Loading="guardando">
+                            Guardar parámetros
+                        </UiButton>
+                    </div>
+                </form>
+            </div>
+        }
+
+        @if (tab3)
+        {
+            <div class="p-4 space-y-4">
+                <div class="flex items-center gap-2">
+                    <input id="cobra-adicional"
+                           type="checkbox"
+                           class="h-4 w-4 rounded-ui border-line text-accent-700 focus:ring-2 focus:ring-accent-700/20"
+                           @bind="param_obj.CobraAdicional" />
+                    <label for="cobra-adicional" class="text-sm text-ink-900">Cobra valor adicional</label>
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="text-sm font-medium text-ink-900">Estados del proceso</h3>
+
+                    @if (isLoading)
                     {
-                        <div class="tab-pane fade show active" id="custom-content-below-messages" role="tabpanel">
-                            <div class="card-body">
-                                <hr style="background-color:ghostwhite; color:lightgray;" size="3">
-                                <div class="row mb-2">
-                                    <div class="col-sm-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" @bind="param_obj.CobraAdicional" type="checkbox">
-                                            <label style="font-size:12px" class="form-check-label">Cobra Valor Adicional</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <br>
-
-                                <div class="card-body mt-1">
-                                    @if (isLoading)
-                                    {
-                                        <div class="text-center my-4">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Cargando...</span>
-                                            </div>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="table-responsive">
-                                            <table class="table table-striped table-hover align-middle">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th style="width: 70px;">Id</th>
-                                                        <th>Estado Del Proceso</th>
-                                                        <th style="width: 100px;">Porcentaje</th>
-                                                        <th class="text-center" style="width: 100px;">Acción</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @if (estados_list != null && estados_list.Any())
-                                                    {
-                                                        @foreach (var agente in estados_list)
-                                                        {
-                                                            <tr>
-                                                                <td>@agente.id</td>
-                                                                <td>@agente.nombre</td>
-                                                                <td>@agente.porc</td>
-                                                                <td class="text-center">
-                                                                    <button type="button" class="btn btn-primary btn-sm" style="font-size:12px; border-radius:15px;" @onclick="() => Editar(agente)">
-                                                                        Editar
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        <tr>
-                                                            <td colspan="4" class="text-center">No hay registros cargados.</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
+                        <UiLoading Text="Cargando estados…" />
                     }
-
-                    <div class="card-footer">
-                        <div class="row bg-transparent">
-                            <div class="col-auto">
-                                <button type="button" style="font-size:12px; border-radius:15px;" @onclick="Editparm" class="btn btn-dark">Guardar</button>
-                                <input type="hidden" @bind="param_obj.Id" id="lId" />
-                            </div>
-                            <div class="col-auto ms-2">
-                                <a href="/Principal" style="font-size:12px; border-radius:15px;" class="btn btn-primary">Cerrar</a>
-                            </div>
-                        </div>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL CONFIGURACIÓN VALORES ADICIONALES -->
-<div class="modal fade show" tabindex="-1" style="display: @(mostrarModal1 ? "block" : "none"); background-color: rgba(0,0,0,0.5);">
-    <div class="modal-dialog modal-lg" style="border-radius: 30px; box-shadow: 0px 8px 16px rgba(12, 12, 12, 0.8);">
-        <div class="modal-content" style="border-radius:30px;">
-            <div class="modal-header text-white" style="background-color: #112366; border-radius: 30px 30px 0 0; overflow: hidden; height:40px;">
-                <h5 class="modal-title fs-6">Configuración Valores Adicionales</h5>
-                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CerrarModal1"></button>
-            </div>
-            <div class="modal-body bg-light bg-gradient">
-                @if (agentesobj != null)
-                {
-                    <div class="row mb-2">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label style="font-size:12px">Id</label>
-                                <input type="text" class="form-control w-50" @bind="agentesobj.id" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="form-group">
-                                <label style="font-size:12px">Detalle Proceso</label>
-                                <input type="text" class="form-control" style="font-weight: bold;" @bind="agentesobj.nombre">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label style="font-size:12px">Porcentaje Vlr Adicional</label>
-                                <input type="text" class="form-control" maxlength="20" @bind="agentesobj.porc">
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-            <div class="modal-footer border-0">
-                <div class="row w-100">
-                    <div class="col-6 text-start">
-                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-secondary" @onclick="CerrarModal1">Cerrar</button>
-                    </div>
-                    <div class="col-6 text-end">
-                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-primary bg-success text-white" @onclick="() => Actualizar(agentesobj)">
-                            <span>Actualizar</span>
-                        </button>
-                    </div>
+                    else if (estados_list.Count == 0)
+                    {
+                        <UiEmpty Icon="sliders"
+                                 Title="Sin estados configurados"
+                                 Message="No hay estados registrados para el valor adicional." />
+                    }
+                    else
+                    {
+                        <UiTable Class="min-w-[520px]">
+                            <Header>
+                                <tr>
+                                    <th class="w-20">Id</th>
+                                    <th>Estado del proceso</th>
+                                    <th class="w-28 text-right">Porcentaje</th>
+                                    <th class="text-right">Acción</th>
+                                </tr>
+                            </Header>
+                            <ChildContent>
+                                @foreach (var estado in estados_list)
+                                {
+                                    <tr>
+                                        <td class="font-numeric">@estado.id</td>
+                                        <td>@(string.IsNullOrWhiteSpace(estado.nombre) ? "—" : estado.nombre)</td>
+                                        <td class="num">@estado.porc</td>
+                                        <td class="actions">
+                                            <div class="flex justify-end">
+                                                <UiButton Variant="ghost" Size="sm" OnClick="@(() => EditarEstado(estado))">
+                                                    <UiIcon Name="pencil" />
+                                                    Editar
+                                                </UiButton>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </ChildContent>
+                        </UiTable>
+                    }
                 </div>
             </div>
-        </div>
-    </div>
+        }
+    </UiPanel>
 </div>
 
-@code
-{
-    private bool mostrarModal = false;
-    private bool mostrarModal1 = false;
+<UiDialog Open="mostrarModal1"
+          Title="Configuración del valor adicional"
+          Subtitle="Ajuste el porcentaje aplicado al estado seleccionado."
+          Size="md"
+          OnClose="CerrarModal1">
+    <ChildContent>
+        <form class="space-y-4" @onsubmit="ActualizarEstado" @onsubmit:preventDefault>
+            <UiField Label="Id" For="estado-id">
+                <UiInput Id="estado-id" Value="@agentesobj.id.ToString()" Disabled="true" Mono="true" />
+            </UiField>
+            <UiField Label="Detalle del proceso" For="estado-nombre" Required="true">
+                <UiInput Id="estado-nombre" @bind-Value="agentesobj.nombre" MaxLength="80" />
+            </UiField>
+            <UiField Label="Porcentaje" For="estado-porc" Required="true">
+                <UiInput Id="estado-porc" @bind-Value="PorcentajeTexto" InputMode="decimal" MaxLength="10" Mono="true" />
+            </UiField>
+
+            @if (!string.IsNullOrWhiteSpace(errorModal))
+            {
+                <div class="rounded-ui border border-danger-600/20 bg-danger-600/5 px-3 py-2 text-sm text-danger-600" role="alert">
+                    @errorModal
+                </div>
+            }
+
+            <button type="submit" class="hidden" aria-hidden="true"></button>
+        </form>
+    </ChildContent>
+    <Footer>
+        <UiButton Variant="secondary" OnClick="CerrarModal1" Disabled="guardandoEstado">Cancelar</UiButton>
+        <UiButton Variant="primary" OnClick="ActualizarEstado" Loading="guardandoEstado">Actualizar</UiButton>
+    </Footer>
+</UiDialog>
+
+<UiToast Visible="toastVisible"
+         Message="toastMessage"
+         Variant="toastVariant"
+         OnClose="CerrarToast" />
+
+@code {
     private bool tab1 = true;
-    private bool tab2 = false;
-    private bool tab3 = false;
-    private bool tab4 = false;
-    private bool tab5 = false;
-    public bool isLoading;
-    private bool esModoEditar = false;
+    private bool tab3;
+    private bool isLoading;
+    private bool guardando;
+    private bool guardandoEstado;
+    private bool mostrarModal1;
+    private string? errorMessage;
+    private string? errorModal;
+    private ParametroDto param_obj = new();
+    private List<EstadoProcesoDto> estados_list = new();
     private EstadoProcesoDto agentesobj = new();
-    private List<EstadoProcesoDto> estados_list { get; set; } = new();
-    IQueryable<EstadoProcesoDto> data;
+    private string PorcentajeTexto
+    {
+        get => agentesobj.porc.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        set
+        {
+            if (float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            {
+                agentesobj.porc = parsed;
+            }
+        }
+    }
 
-    public ParametroDto param_obj { get; set; } = new();
-    public string errorMessage { get; set; }
+    private bool toastVisible;
+    private string toastMessage = string.Empty;
+    private string toastVariant = "ok";
 
     protected override async Task OnInitializedAsync()
     {
-        await getparametros();
-
-        var estadosResult = await ParametroService.Getlist();
-        estados_list = estadosResult.Value ?? new List<EstadoProcesoDto>();
-        data = estados_list.AsQueryable();
+        await CargarParametros();
+        await CargarEstados();
     }
 
-    private async Task Actualizar(EstadoProcesoDto agentes)
-    {
-        var resultado = await ParametroService.EditEstados(agentes);
-
-        if (resultado.IsSuccess)
-        {
-            mostrarModal1 = false;
-            StateHasChanged();
-        }
-        else
-        {
-            Console.WriteLine($"Error al actualizar el estado: {resultado.Error}");
-        }
-    }
-
-    void Editar(EstadoProcesoDto agentes)
-    {
-        agentesobj = agentes;
-        esModoEditar = true;
-        mostrarModal1 = true;
-    }
-
-    private async Task getparametros()
+    private async Task CargarParametros()
     {
         try
         {
-            var parametrosResponse = await ParametroService.GetParametroById(1);
-            param_obj = parametrosResponse.IsSuccess && parametrosResponse.Value is not null
-                ? parametrosResponse.Value
+            var respuesta = await ParametroService.GetParametroById(1);
+            param_obj = respuesta.IsSuccess && respuesta.Value is not null
+                ? respuesta.Value
                 : new ParametroDto();
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Error obteniendo parametros: {ex.Message}");
+            param_obj = new ParametroDto();
         }
     }
 
-    private void CerrarModal()
+    private async Task CargarEstados()
     {
-        mostrarModal = false;
+        isLoading = true;
+        try
+        {
+            var respuesta = await ParametroService.Getlist();
+            estados_list = respuesta.Value ?? new List<EstadoProcesoDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private void CerrarModal1()
+    private async Task Editparm()
     {
-        mostrarModal1 = false;
-    }
+        errorMessage = null;
+        if (!IsValid(param_obj))
+        {
+            errorMessage = "Los campos Secretaría y Dirección son obligatorios.";
+            return;
+        }
 
-    public void displayTabs(int TabNumber)
-    {
-        tab1 = (TabNumber == 1);
-        tab2 = (TabNumber == 2);
-        tab3 = (TabNumber == 3);
-        tab4 = (TabNumber == 4);
-        tab5 = (TabNumber == 5);
-    }
-
-    protected async Task Editparm()
-    {
-        if (IsValid(param_obj))
+        guardando = true;
+        try
         {
             var resultado = await ParametroService.EditParametros(1, param_obj);
             if (resultado.IsSuccess)
             {
-                await JSRuntime.InvokeVoidAsync("alert", "Información Actualizada.");
+                MostrarToast("Parámetros actualizados.");
             }
             else
             {
                 errorMessage = resultado.Error ?? "No fue posible actualizar los parámetros.";
-                await JSRuntime.InvokeVoidAsync("alert", errorMessage);
+                MostrarToast(errorMessage, "danger");
             }
         }
-        else
+        finally
         {
-            await JSRuntime.InvokeVoidAsync("alert", "Existen Campos Vacíos.");
+            guardando = false;
         }
     }
 
-    public void MostrarModal(bool nkey)
+    private bool IsValid(ParametroDto param) =>
+        !string.IsNullOrWhiteSpace(param.Nombre) && !string.IsNullOrWhiteSpace(param.Direccion);
+
+    private void displayTabs(int tabNumber)
     {
-        mostrarModal = true;
-        esModoEditar = nkey;
+        tab1 = tabNumber == 1;
+        tab3 = tabNumber == 3;
     }
 
-    public void MostrarModal1(bool nkey)
-    {
-        mostrarModal1 = true;
-        esModoEditar = nkey;
+    private string TabClass(bool active) => active
+        ? "border-b-2 border-accent-700 px-4 py-2 text-sm font-medium text-accent-700"
+        : "border-b-2 border-transparent px-4 py-2 text-sm font-medium text-ink-500 transition-colors duration-150 hover:text-ink-900";
 
-        if (!esModoEditar)
-        {
-            agentesobj = new EstadoProcesoDto();
-        }
-    }
-
-    private bool IsValid(ParametroDto param_obj)
+    private void EditarEstado(EstadoProcesoDto estado)
     {
-        PropertyInfo[] properties = param_obj.GetType().GetProperties();
-        List<string> propertiesToValidate = new List<string>
+        agentesobj = new EstadoProcesoDto
         {
-            "cedula",
-            "apellidos",
-            "nombre",
-            "direccion"
+            id = estado.id,
+            nombre = estado.nombre,
+            porc = estado.porc
         };
+        errorModal = null;
+        mostrarModal1 = true;
+    }
 
-        foreach (PropertyInfo property in properties)
+    private async Task ActualizarEstado()
+    {
+        errorModal = null;
+
+        if (string.IsNullOrWhiteSpace(agentesobj.nombre))
         {
-            if (propertiesToValidate.Contains(property.Name) && property.PropertyType == typeof(string))
-            {
-                string value = (string)property.GetValue(param_obj);
-                if (string.IsNullOrEmpty(value))
-                {
-                    errorMessage = $"El campo '{property.Name}' es obligatorio.";
-                    return false;
-                }
-            }
+            errorModal = "Ingrese el detalle del proceso.";
+            return;
         }
 
-        return true;
+        guardandoEstado = true;
+        try
+        {
+            var resultado = await ParametroService.EditEstados(agentesobj);
+            if (resultado.IsFailure)
+            {
+                errorModal = resultado.Error ?? "No fue posible actualizar el estado.";
+                return;
+            }
+
+            mostrarModal1 = false;
+            await CargarEstados();
+            MostrarToast("Estado actualizado.");
+        }
+        finally
+        {
+            guardandoEstado = false;
+        }
     }
+
+    private void CerrarModal1()
+    {
+        if (guardandoEstado)
+        {
+            return;
+        }
+
+        mostrarModal1 = false;
+    }
+
+    private void MostrarToast(string mensaje, string variante = "ok")
+    {
+        toastMessage = mensaje;
+        toastVariant = variante;
+        toastVisible = true;
+    }
+
+    private void CerrarToast() => toastVisible = false;
 }

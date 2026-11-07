@@ -10,7 +10,7 @@ namespace Coactivos_Predial.Shared.AppDbContext;
 /// </summary>
 public sealed class TenantDbContextFactory : IDesignTimeDbContextFactory<TenantDbContext>
 {
-    private const string DatabaseName = "SGD.Dataset";
+    private const string DatabaseName = "Cimitarra";
 
     public TenantDbContext CreateDbContext(string[] args)
     {

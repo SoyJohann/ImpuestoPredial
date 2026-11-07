@@ -3,12 +3,4 @@ using Coactivos_Predial.Shared.Services.SDatabase;
 namespace Coactivos_Predial.Shared.Services.SPropietarios;
 
 /// <summary>Acceso a los datos de propietarios. Solo resuelve la conexión del tenant.</summary>
-public partial class PropietariosService : IpropietariosService
-{
-    private readonly ITenantConnectionFactory connFactory;
-
-    public PropietariosService(ITenantConnectionFactory connFactory)
-    {
-        this.connFactory = connFactory;
-    }
-}
+public partial class PropietariosService(ITenantConnectionFactory connFactory) : IpropietariosService;

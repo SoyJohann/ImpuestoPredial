@@ -1,267 +1,385 @@
 ﻿@page "/Infractores"
 
-@using Coactivos_Predial.Models;
-@using Coactivos_Predial.Shared.Models
 @using Coactivos_Predial.Shared.Services.SPropietarios;
 @using Coactivos_Predial.Shared.Services.SPropietarios.Responses;
-@inject NavigationManager NavigationManager
+
+@rendermode InteractiveServer
 @inject IpropietariosService InfractoresService;
-@inject IJSRuntime js
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header p-0" style="background-color: #112366; height: 41px;">
-                    <div class="row ps-1 align-items-center h-100">
-                        <div class="col-6 col-md-7">
-                            <h5 class="card-title ms-3 mb-0 text-white">Propietarios</h5>
-                        </div>
-                        <div class="col-4 col-md-4">
-                            <div class="input-group input-group-sm">
-                                <input type="text" id="buscarnit" name="searchString" class="form-control" @bind="buscarnit" placeholder="Buscar por cédula" />
-                                <button type="button" @onclick="findbycedula" class="btn btn-light btn-sm border-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
-                                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-2 col-md-1 text-end pe-3">
-                            <button type="button" class="btn btn-primary btn-sm rounded-1" @onclick="@(args => MostrarModal(false))">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
-                                    <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+<PageTitle>Propietarios</PageTitle>
 
-                <div class="card-body mt-1">
-                    @if (isLoading)
-                    {
-                        <div class="text-center my-4">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando...</span>
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover align-middle">
-                                <thead class="table-primary">
-                                    <tr>
-                                        <th>Documento</th>
-                                        <th>Nombre</th>
-                                        <th>Teléfono</th>
-                                        <th>Email</th>
-                                        <th class="text-center">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (infractores != null && infractores.Any())
-                                    {
-                                        @foreach (var infractor in infractores)
-                                        {
-                                            <tr>
-                                                <td>@infractor.Documento</td>
-                                                <td>@infractor.Nombre</td>
-                                                <td>@infractor.Telefono</td>
-                                                <td>@infractor.Correo</td>
-                                                <td class="text-center">
-                                                    <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-primary btn-sm" @onclick="() => EditarInfractor(infractor)">
-                                                        Editar
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <tr>
-                                            <td colspan="5" class="text-center">No hay datos disponibles.</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
+<div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <h1 class="text-[22px] font-semibold leading-7 text-ink-900">Propietarios</h1>
+        <p class="mt-1 text-sm text-ink-500">Registro de propietarios e infractores asociados a los predios.</p>
     </div>
+    <UiButton Variant="primary" OnClick="AbrirModalNuevo">
+        <UiIcon Name="plus" />
+        Agregar propietario
+    </UiButton>
 </div>
 
-<!-- MODAL EDITAR/AGREGAR PROPIETARIO -->
-<div class="modal fade show" tabindex="-1" style="display: @(mostrarModal ? "block" : "none"); background-color: rgba(0,0,0,0.5);">
-    <div class="modal-dialog modal-lg" style="border-radius: 30px; box-shadow: 0px 8px 16px rgba(12, 12, 12, 0.8);">
-        <div class="modal-content" style="border-radius:30px;">
-            <div class="modal-header text-white" style="background-color: #3679D3; border-radius: 30px 30px 0 0; overflow: hidden; height:40px;">
-                <h5 class="modal-title fs-6">Editar Propietarios</h5>
-                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CerrarModal"></button>
-            </div>
-
-            <div class="modal-body bg-light bg-gradient">
-                @if (infractoresobj != null)
+<div class="mt-4">
+    <UiPanel Title="Propietarios" Subtitle="@Resumen" BodyClass="p-0">
+        <div class="border-b border-line p-3">
+            <form class="flex flex-col gap-2 sm:flex-row sm:items-end" @onsubmit="Buscar" @onsubmit:preventDefault>
+                <div class="w-full sm:max-w-xs">
+                    <UiField Label="Buscar por cédula" For="buscar-cedula">
+                        <UiInput Id="buscar-cedula"
+                                 @bind-Value="buscarnit"
+                                 Mono="true"
+                                 Placeholder="Digite la cédula"
+                                 Autocomplete="off" />
+                    </UiField>
+                </div>
+                <UiButton ButtonType="submit" Variant="secondary">
+                    <UiIcon Name="search" />
+                    Buscar
+                </UiButton>
+                @if (!string.IsNullOrWhiteSpace(buscarnit))
                 {
-                    <div class="row mb-2">
-                        <div class="col-sm-4">
-                            <div class="form-group">
-                                <label style="font-size:12px">Tipo Identificación</label>
-                                <select id="cars" class="form-control col-auto" style="font-weight: bold; font-size:12px" @bind="infractoresobj.TipoId">
-                                    <option value="1">Cedula Ciudadania</option>
-                                    <option value="2">Tarjeta Identidad</option>
-                                    <option value="3">Cedula Extranjeria</option>
-                                    <option value="4">Nit</option>
-                                    <option value="6">Pasaporte</option>
-                                    <option value="7">Carnet Diplomatico</option>
-                                    <option value="9">Cedula Venezolana</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-sm-8">
-                            <div class="form-group">
-                                <label style="font-size:12px">Cédula Propietario</label>
-                                <input type="text" class="form-control" maxlength="13" style="font-weight: bold;" @bind="infractoresobj.Documento">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label style="font-size:12px">Nombre Propietario</label>
-                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="30" @bind="infractoresobj.Nombre">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label style="font-size:12px">Correo:</label>
-                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="40" @bind="infractoresobj.Correo">
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label style="font-size:12px">Teléfono:</label>
-                                <input type="text" onkeypress="return (event.charCode != 39 && event.charCode != 34 && event.charCode != 44)" class="form-control" maxlength="15" @bind="infractoresobj.Telefono">
-                            </div>
-                        </div>
-                    </div>
+                    <UiButton Variant="ghost" OnClick="LimpiarBusqueda">
+                        <UiIcon Name="x" />
+                        Limpiar
+                    </UiButton>
                 }
-            </div>
-            <div class="modal-footer border-0">
-                <div class="row w-100">
-                    <div class="col-6 text-start">
-                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-secondary" @onclick="CerrarModal">Cerrar</button>
-                    </div>
-                    <div class="col-6 text-end">
-                        <button type="button" style="font-size:12px; border-radius:15px;" class="btn btn-primary bg-success text-white" @onclick="() => esModoEditar ? Actualizar(infractoresobj) : Agregar()">
-                            @if (esModoEditar)
-                            {
-                                <span>Actualizar</span>
-                            }
-                            else
-                            {
-                                <span>Agregar</span>
-                            }
-                        </button>
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
-    </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorCarga))
+        {
+            <div class="border-b border-danger-600/20 bg-danger-600/5 px-4 py-2.5 text-sm text-danger-600" role="alert">
+                @errorCarga
+            </div>
+        }
+
+        @if (isLoading)
+        {
+            <div class="px-4">
+                <UiLoading Text="Cargando propietarios…" />
+            </div>
+        }
+        else if (infractores.Count == 0)
+        {
+            <UiEmpty Icon="users"
+                     Title="No hay propietarios registrados"
+                     Message="Agregue un propietario para asociarlo a los predios y procesos del municipio.">
+                <Action>
+                    <UiButton Variant="secondary" Size="sm" OnClick="AbrirModalNuevo">
+                        <UiIcon Name="plus" />
+                        Agregar propietario
+                    </UiButton>
+                </Action>
+            </UiEmpty>
+        }
+        else
+        {
+            <UiTable Class="min-w-[760px]">
+                <Header>
+                    <tr>
+                        <th>Documento</th>
+                        <th>Nombre</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
+                        <th class="text-right">Acciones</th>
+                    </tr>
+                </Header>
+                <ChildContent>
+                    @foreach (var infractor in InfractoresPagina)
+                    {
+                        <tr>
+                            <td class="font-numeric">@infractor.Documento</td>
+                            <td>@(string.IsNullOrWhiteSpace(infractor.Nombre) ? "—" : infractor.Nombre)</td>
+                            <td class="font-numeric">@(string.IsNullOrWhiteSpace(infractor.Telefono) ? "—" : infractor.Telefono)</td>
+                            <td>@(string.IsNullOrWhiteSpace(infractor.Correo) ? "—" : infractor.Correo)</td>
+                            <td class="actions">
+                                <div class="flex justify-end">
+                                    <UiButton Variant="ghost" Size="sm" OnClick="@(() => EditarInfractor(infractor))">
+                                        <UiIcon Name="pencil" />
+                                        Editar
+                                    </UiButton>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </ChildContent>
+            </UiTable>
+
+            <div class="border-t border-line px-4 py-3">
+                <UiPager Page="pagina"
+                         PageSize="TamanoPagina"
+                         TotalItems="infractores.Count"
+                         OnPageChanged="CambiarPagina" />
+            </div>
+        }
+    </UiPanel>
 </div>
+
+<UiDialog Open="mostrarModal"
+          Title="@(esModoEditar ? "Editar propietario" : "Agregar propietario")"
+          Subtitle="Los datos se usan para identificar al propietario en los procesos."
+          Size="lg"
+          OnClose="CerrarModal">
+    <ChildContent>
+        <form class="grid grid-cols-1 gap-4 sm:grid-cols-2" @onsubmit="Guardar" @onsubmit:preventDefault>
+        <UiField Label="Tipo de identificación" For="tipo-identificacion" Required="true">
+            <UiSelect Id="tipo-identificacion" @bind-Value="TipoIdSeleccionado">
+                <option value="1">Cédula de ciudadanía</option>
+                <option value="2">Tarjeta de identidad</option>
+                <option value="3">Cédula de extranjería</option>
+                <option value="4">NIT</option>
+                <option value="6">Pasaporte</option>
+                <option value="7">Carné diplomático</option>
+                <option value="9">Cédula venezolana</option>
+            </UiSelect>
+        </UiField>
+
+        <UiField Label="Documento" For="documento" Required="true" Help="Sin puntos ni espacios.">
+            <UiInput Id="documento"
+                     @bind-Value="infractoresobj.Documento"
+                     Mono="true"
+                     MaxLength="13"
+                     Placeholder="Número de documento" />
+        </UiField>
+
+        <UiField Label="Nombre completo" For="nombre" Required="true" Class="sm:col-span-2">
+            <UiInput Id="nombre"
+                     @bind-Value="infractoresobj.Nombre"
+                     MaxLength="30"
+                     Placeholder="Nombre o razón social" />
+        </UiField>
+
+        <UiField Label="Correo" For="correo">
+            <UiInput Id="correo"
+                     @bind-Value="infractoresobj.Correo"
+                     Type="email"
+                     MaxLength="40"
+                     Placeholder="correo@ejemplo.com" />
+        </UiField>
+
+        <UiField Label="Teléfono" For="telefono">
+            <UiInput Id="telefono"
+                     @bind-Value="infractoresobj.Telefono"
+                     InputMode="tel"
+                     MaxLength="15"
+                     Placeholder="Número de contacto" />
+        </UiField>
+
+        @if (!string.IsNullOrWhiteSpace(errorModal))
+        {
+            <div class="rounded-ui border border-danger-600/20 bg-danger-600/5 px-3 py-2 text-sm text-danger-600 sm:col-span-2" role="alert">
+                @errorModal
+            </div>
+        }
+
+        <button type="submit" class="hidden" aria-hidden="true"></button>
+        </form>
+    </ChildContent>
+
+    <Footer>
+        <UiButton Variant="secondary" OnClick="CerrarModal" Disabled="guardando">Cancelar</UiButton>
+        <UiButton Variant="primary" OnClick="Guardar" Loading="guardando">
+            @(esModoEditar ? "Actualizar" : "Agregar")
+        </UiButton>
+    </Footer>
+</UiDialog>
+
+<UiToast Visible="toastVisible"
+         Message="toastMessage"
+         Variant="toastVariant"
+         OnClose="CerrarToast" />
 
 @code {
-    private bool mostrarModal = false;
-    private string buscarnit;
-    private PropietarioDto infractoresobj = new();
-    private List<PropietarioDto> infractores { get; set; } = new();
+    private const int TamanoPagina = 20;
+
+    private bool mostrarModal;
     private bool esModoEditar;
-    IQueryable<PropietarioDto> data;
-    bool isLoading = false;
+    private bool isLoading;
+    private bool guardando;
+    private string? buscarnit;
+    private string? errorCarga;
+    private string? errorModal;
+    private int pagina = 1;
+    private PropietarioDto infractoresobj = CrearPropietario();
+    private List<PropietarioDto> infractores = new();
 
-    protected override async Task OnInitializedAsync()
+    private bool toastVisible;
+    private string toastMessage = string.Empty;
+    private string toastVariant = "ok";
+
+    private string Resumen => infractores.Count switch
     {
-        await ShowLoading();
-        const int cantidadInicial = 8;
-        var respuesta = await InfractoresService.GetAll();
-        var todosLosInfractores = respuesta.Value ?? new List<PropietarioDto>();
+        0 => "Sin registros",
+        1 => "1 registro",
+        _ => $"{infractores.Count} registros"
+    };
 
-        if (todosLosInfractores.Any())
+    private IEnumerable<PropietarioDto> InfractoresPagina =>
+        infractores.Skip((pagina - 1) * TamanoPagina).Take(TamanoPagina);
+
+    private string TipoIdSeleccionado
+    {
+        get => infractoresobj.TipoId.ToString();
+        set
         {
-            infractores = todosLosInfractores.Take(cantidadInicial).ToList();
-            data = infractores.AsQueryable();
+            if (int.TryParse(value, out var id))
+            {
+                infractoresobj.TipoId = id;
+            }
         }
     }
 
-    async Task ShowLoading()
+    protected override Task OnInitializedAsync() => CargarTodos();
+
+    private async Task CargarTodos()
     {
         isLoading = true;
-        await Task.Yield();
-        isLoading = false;
-    }
-
-    private async Task findbycedula()
-    {
-        var respuesta = await InfractoresService.GetInfractoresByCedula(buscarnit);
-        infractores = respuesta.Value ?? new List<PropietarioDto>();
-    }
-
-    private async Task Agregar()
-    {
-        var result = await InfractoresService.Add(infractoresobj);
-        if (result.IsSuccess)
+        errorCarga = null;
+        try
         {
-            mostrarModal = false;
+            var respuesta = await InfractoresService.GetAll();
+            if (respuesta.IsFailure)
+            {
+                infractores.Clear();
+                errorCarga = respuesta.Error ?? "No fue posible cargar los propietarios.";
+                return;
+            }
+
+            infractores = respuesta.Value ?? new List<PropietarioDto>();
+            pagina = 1;
         }
-        else
+        finally
         {
-            Console.WriteLine($"Error al agregar el propietario: {result.Error}");
+            isLoading = false;
         }
     }
 
-    void EditarInfractor(PropietarioDto infractor)
+    private async Task Buscar()
     {
-        infractoresobj = infractor;
+        if (string.IsNullOrWhiteSpace(buscarnit))
+        {
+            await CargarTodos();
+            return;
+        }
+
+        isLoading = true;
+        errorCarga = null;
+        try
+        {
+            var respuesta = await InfractoresService.GetInfractoresByCedula(buscarnit.Trim());
+            if (respuesta.IsFailure)
+            {
+                infractores.Clear();
+                errorCarga = respuesta.Error ?? "No fue posible buscar el propietario.";
+                return;
+            }
+
+            infractores = respuesta.Value ?? new List<PropietarioDto>();
+            pagina = 1;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LimpiarBusqueda()
+    {
+        buscarnit = string.Empty;
+        await CargarTodos();
+    }
+
+    private void AbrirModalNuevo()
+    {
+        infractoresobj = CrearPropietario();
+        esModoEditar = false;
+        errorModal = null;
+        mostrarModal = true;
+    }
+
+    private void EditarInfractor(PropietarioDto infractor)
+    {
+        infractoresobj = new PropietarioDto
+        {
+            Id = infractor.Id,
+            Documento = infractor.Documento,
+            TipoId = infractor.TipoId,
+            Nombre = infractor.Nombre,
+            Telefono = infractor.Telefono,
+            Correo = infractor.Correo,
+            TipoNombre = infractor.TipoNombre
+        };
         esModoEditar = true;
+        errorModal = null;
         mostrarModal = true;
     }
 
-    private async Task Actualizar(PropietarioDto infractor)
+    private async Task Guardar()
     {
-        var resultado = await InfractoresService.EditInfractores(infractor);
+        errorModal = null;
 
-        if (resultado.IsSuccess)
+        if (infractoresobj.TipoId <= 0)
         {
-            mostrarModal = true;
-            StateHasChanged();
+            errorModal = "Seleccione el tipo de identificación.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(infractoresobj.Documento))
+        {
+            errorModal = "Ingrese el número de documento.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(infractoresobj.Nombre))
+        {
+            errorModal = "Ingrese el nombre completo.";
+            return;
+        }
+
+        guardando = true;
+        try
+        {
+            var resultado = esModoEditar
+                ? await InfractoresService.EditInfractores(infractoresobj)
+                : await InfractoresService.Add(infractoresobj);
+
+            if (resultado.IsFailure)
+            {
+                errorModal = resultado.Error ?? "No fue posible guardar el propietario.";
+                return;
+            }
+
             mostrarModal = false;
+            buscarnit = string.Empty;
+            await CargarTodos();
+            MostrarToast(esModoEditar ? "Propietario actualizado." : "Propietario agregado.");
         }
-        else
+        finally
         {
-            Console.WriteLine($"Error al actualizar el propietario: {resultado.Error}");
-        }
-    }
-
-    public void MostrarModal(bool nkey)
-    {
-        mostrarModal = true;
-        esModoEditar = nkey;
-
-        if (esModoEditar && infractoresobj != null)
-        {
-        }
-        else
-        {
-            infractoresobj = new PropietarioDto();
+            guardando = false;
         }
     }
 
     private void CerrarModal()
     {
+        if (guardando)
+        {
+            return;
+        }
+
         mostrarModal = false;
     }
+
+    private void CambiarPagina(int nuevaPagina) => pagina = nuevaPagina;
+
+    private void MostrarToast(string mensaje, string variante = "ok")
+    {
+        toastMessage = mensaje;
+        toastVariant = variante;
+        toastVisible = true;
+    }
+
+    private void CerrarToast() => toastVisible = false;
+
+    private static PropietarioDto CrearPropietario() => new() { TipoId = 1 };
 }
