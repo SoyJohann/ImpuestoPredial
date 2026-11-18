@@ -9,5 +9,8 @@ namespace Coactivos_Predial.Shared.Services.UserAccesor
 
         /// <summary>Nombre del usuario autenticado tomado de la cookie.</summary>
         Task<string?> GetUserNameAsync();
+
+        /// <summary>Indica si el usuario autenticado tiene el rol indicado.</summary>
+        Task<bool> IsInRoleAsync(string role);
     }
 }

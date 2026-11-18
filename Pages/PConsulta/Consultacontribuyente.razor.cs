@@ -1,6 +1,7 @@
 using Coactivos_Predial.Shared.Components.Ui;
 using Coactivos_Predial.Shared.Models;
 using Coactivos_Predial.Shared.Services.Document;
+using Coactivos_Predial.Shared.Services.Document.Enums;
 using Coactivos_Predial.Shared.Services.SContribuyentes;
 using Coactivos_Predial.Shared.Services.SPDios.Responses;
 using Microsoft.JSInterop;
@@ -13,7 +14,9 @@ public partial class Consultacontribuyente
     private List<ContribuyenteDto> Contribuyentes { get; set; } = [];
     private ContribuyenteDto? Seleccionado { get; set; }
     private List<DocumentoDto> DocumentosDto { get; set; } = [];
+    private List<TipoDocumentoDto> TiposDocumento { get; set; } = [];
     private string filtroDocumentos = string.Empty;
+    private int? carpetaSeleccionada;
     private PdfViewerModal? pdfViewerModal;
 
     private bool isLoading;
@@ -21,19 +24,47 @@ public partial class Consultacontribuyente
     private bool mostrarModalBusqueda;
     private string? errorBusqueda;
 
-    private IEnumerable<DocumentoDto> DocumentosFiltrados => string.IsNullOrWhiteSpace(filtroDocumentos)
-        ? DocumentosDto
-        : DocumentosDto.Where(doc =>
-            (doc.Nombre ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase)
-            || (doc.Ruta ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<DocumentoDto> DocumentosFiltrados
+    {
+        get
+        {
+            var documentos = DocumentosDto.AsEnumerable();
+            if (carpetaSeleccionada is { } tipoId)
+            {
+                documentos = documentos.Where(doc => doc.TipoDocumentoId == tipoId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filtroDocumentos))
+            {
+                documentos = documentos.Where(doc =>
+                    (doc.Nombre ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase)
+                    || (doc.NombreArchivo ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase)
+                    || (doc.Ruta ?? string.Empty).Contains(filtroDocumentos, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return documentos;
+        }
+    }
 
     private string NegociosResumen => Contribuyentes.Count == 0
         ? "Sin negocios"
         : $"{Contribuyentes.Count} negocio{(Contribuyentes.Count == 1 ? "" : "s")}";
 
-    private string DocumentosResumen => DocumentosDto.Count == 0
-        ? "Sin documentos"
-        : $"{DocumentosDto.Count} documento{(DocumentosDto.Count == 1 ? "" : "s")}";
+    private string DocumentosResumen
+    {
+        get
+        {
+            if (carpetaSeleccionada is { } tipoId)
+            {
+                var cantidad = DocumentosDto.Count(doc => doc.TipoDocumentoId == tipoId);
+                return $"{cantidad} documento{(cantidad == 1 ? "" : "s")} en {NombreCarpeta(tipoId)}";
+            }
+
+            return DocumentosDto.Count == 0
+                ? "Sin documentos"
+                : $"{DocumentosDto.Count} documento{(DocumentosDto.Count == 1 ? "" : "s")}";
+        }
+    }
 
     // ---------------------------------------------------------------- Búsqueda
 
@@ -98,6 +129,7 @@ public partial class Consultacontribuyente
     {
         Seleccionado = contribuyente;
         filtroDocumentos = string.Empty;
+        carpetaSeleccionada = null;
         errorBusqueda = null;
         await CargarDocumentosAsync(contribuyente.Id);
     }
@@ -121,6 +153,27 @@ public partial class Consultacontribuyente
         Seleccionado is { } contribuyente
             ? CargarDocumentosAsync(contribuyente.Id)
             : Task.CompletedTask;
+
+    private void AbrirCarpeta(int tipoId)
+    {
+        carpetaSeleccionada = tipoId;
+        filtroDocumentos = string.Empty;
+    }
+
+    private void CerrarCarpeta()
+    {
+        carpetaSeleccionada = null;
+        filtroDocumentos = string.Empty;
+    }
+
+    private string NombreCarpeta(int tipoId) =>
+        TiposDocumento.FirstOrDefault(tipo => tipo.Id == tipoId)?.Nombre ?? "Sin clasificar";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Tenant.InitializeAsync();
+        TiposDocumento = await tiposDocumentoService.GetActivosAsync(Modulo.IndustriaComercio);
+    }
 
     // ---------------------------------------------------------------- Visor PDF
 

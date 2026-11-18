@@ -5,6 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Coactivos_Predial.Controller
 {
+    /// <summary>
+    /// Endpoint heredado para reportes que descargan por nombre de archivo.
+    /// La consulta documental usa /api/documentos/{id}/descargar.
+    /// </summary>
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]

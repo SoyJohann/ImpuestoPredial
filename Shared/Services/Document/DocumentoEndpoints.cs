@@ -34,12 +34,12 @@ public static class DocumentoEndpoints
         context.Response.Headers["Content-Disposition"] =
             new ContentDispositionHeaderValue(download ? "attachment" : "inline")
             {
-                FileNameStar = Path.GetFileName(document.Path)
+                FileNameStar = document.NombreDescarga
             }.ToString();
 
         var stream = new FileStream(document.Path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024,
             FileOptions.Asynchronous | FileOptions.SequentialScan);
-        return Results.Stream(stream, "application/pdf", lastModified: modified, entityTag: entityTag,
+        return Results.Stream(stream, document.MimeType, lastModified: modified, entityTag: entityTag,
             enableRangeProcessing: true);
     }
 

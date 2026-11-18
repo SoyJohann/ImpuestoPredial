@@ -2,12 +2,16 @@
 @using Coactivos_Predial.Shared.Components
 @using Coactivos_Predial.Shared.Models
 @using Coactivos_Predial.Shared.Services.Document
+@using Coactivos_Predial.Shared.Services.Document.Enums
+@using Coactivos_Predial.Shared.Services.SDatabase
 @using Coactivos_Predial.Shared.Services.SContribuyentes
 @using Coactivos_Predial.Shared.Services.SPDios.Responses
 
 @rendermode InteractiveServer
 @inject IContribuyentesService contribuyentesService
 @inject IDocumentoLinkService DocumentoLinkService
+@inject ITiposDocumentoService tiposDocumentoService
+@inject ITenantProvider Tenant
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Consulta de contribuyente</PageTitle>
@@ -169,50 +173,67 @@ else if (busquedaRealizada && Contribuyentes.Count > 0)
                     </Actions>
 
                     <ChildContent>
-                        @if (DocumentosDto.Count == 0)
+                        @if (carpetaSeleccionada is null)
                         {
-                            <UiEmpty Icon="file-text"
-                                     Title="Este contribuyente aún no tiene documentos"
-                                     Message="Los documentos de industria y comercio aparecerán aquí cuando se carguen." />
+                            <UiDocumentFolders Documentos="DocumentosDto"
+                                               Tipos="TiposDocumento"
+                                               OnOpen="AbrirCarpeta" />
                         }
                         else
                         {
-                            <div class="border-b border-line px-3 py-2">
-                                <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
-                                       class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
+                            <div class="flex items-center justify-between gap-3 border-b border-line px-3 py-2">
+                                <UiButton Variant="ghost" Size="sm" OnClick="CerrarCarpeta">
+                                    <UiIcon Name="chevron-left" />
+                                    Todas las carpetas
+                                </UiButton>
+                                <span class="text-xs text-ink-500">@NombreCarpeta(carpetaSeleccionada.Value)</span>
                             </div>
-                            <UiTable Class="max-h-[calc(100vh-380px)] min-h-[160px] overscroll-contain">
-                                <Header>
-                                    <tr>
-                                        <th>Documento</th>
-                                        <th>Fecha</th>
-                                        <th class="text-right">Acciones</th>
-                                    </tr>
-                                </Header>
-                                <ChildContent>
-                                    @foreach (var doc in DocumentosFiltrados)
-                                    {
+
+                            @if (!DocumentosFiltrados.Any())
+                            {
+                                <UiEmpty Icon="folder-open"
+                                         Title="Esta carpeta no tiene documentos"
+                                         Message="No hay documentos registrados en esta carpeta." />
+                            }
+                            else
+                            {
+                                <div class="border-b border-line px-3 py-2">
+                                    <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
+                                           class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
+                                </div>
+                                <UiTable Class="max-h-[calc(100vh-380px)] min-h-[160px] overscroll-contain">
+                                    <Header>
                                         <tr>
-                                            <td>
-                                                <p class="font-medium text-ink-900">@doc.Nombre</p>
-                                                <p class="font-numeric max-w-[320px] truncate text-xs text-ink-500">@doc.Ruta</p>
-                                            </td>
-                                            <td class="font-numeric">@FechaTexto(doc.Fecha)</td>
-                                            <td class="actions">
-                                                <div class="flex items-center justify-end gap-1">
-                                                    <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.Id))">
-                                                        <UiIcon Name="file-text" />
-                                                        Ver
-                                                    </UiButton>
-                                                    <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.Id/descargar">
-                                                        <UiIcon Name="download" /> Descargar
-                                                    </a>
-                                                </div>
-                                            </td>
+                                            <th>Documento</th>
+                                            <th>Fecha</th>
+                                            <th class="text-right">Acciones</th>
                                         </tr>
-                                    }
-                                </ChildContent>
-                            </UiTable>
+                                    </Header>
+                                    <ChildContent>
+                                        @foreach (var doc in DocumentosFiltrados)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <p class="font-medium text-ink-900">@doc.Nombre</p>
+                                                    <p class="font-numeric max-w-[320px] truncate text-xs text-ink-500">@(doc.NombreArchivo ?? doc.Ruta)</p>
+                                                </td>
+                                                <td class="font-numeric">@FechaTexto(doc.Fecha)</td>
+                                                <td class="actions">
+                                                    <div class="flex items-center justify-end gap-1">
+                                                        <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.Id))">
+                                                            <UiIcon Name="file-text" />
+                                                            Ver
+                                                        </UiButton>
+                                                        <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.Id/descargar">
+                                                            <UiIcon Name="download" /> Descargar
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </ChildContent>
+                                </UiTable>
+                            }
                         }
                     </ChildContent>
                 </UiPanel>

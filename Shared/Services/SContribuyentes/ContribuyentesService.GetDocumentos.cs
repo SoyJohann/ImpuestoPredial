@@ -15,16 +15,19 @@ public partial class ContribuyentesService
                 .Where(documento =>
                     documento.ContribuyenteId == contribuyenteId
                     && documento.Modulo == Modulo.IndustriaComercio
-                    && documento.IsActive)
+                    && documento.IsActive
+                    && documento.EliminadoEn == null)
                 .OrderBy(documento => documento.Id)
                 .Select(documento => new DocumentoDto(
                     documento.Id,
                     documento.Modulo,
+                    documento.TipoDocumentoId,
+                    documento.TipoDocumento.Nombre,
                     documento.PredioId,
                     documento.CodigoPredial,
                     documento.Nombre,
+                    documento.NombreArchivo,
                     documento.Fecha,
-                    documento.Ruta,
                     documento.Ruta))
                 .ToListAsync();
         }, "No fue posible consultar los documentos del contribuyente.");

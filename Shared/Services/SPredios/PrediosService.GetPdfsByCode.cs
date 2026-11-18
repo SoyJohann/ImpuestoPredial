@@ -12,16 +12,21 @@ public partial class PrediosService
         {
             return await tenantDbContext.Documentos!
                 .AsNoTracking()
-                .Where(s => s.PredioId == predioId && s.Modulo == Modulo.Predial)
+                .Where(s => s.PredioId == predioId
+                            && s.Modulo == Modulo.Predial
+                            && s.IsActive
+                            && s.EliminadoEn == null)
                 .OrderBy(documento => documento.Id)
                 .Select(documento => new DocumentoDto(
                     documento.Id,
                     documento.Modulo,
+                    documento.TipoDocumentoId,
+                    documento.TipoDocumento.Nombre,
                     documento.PredioId,
                     documento.CodigoPredial,
                     documento.Nombre,
+                    documento.NombreArchivo,
                     documento.Fecha,
-                    documento.Ruta,
                     documento.Ruta))
                 .ToListAsync();
         }, "No fue posible consultar los documentos del predio.");

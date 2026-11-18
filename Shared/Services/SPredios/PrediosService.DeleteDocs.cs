@@ -9,7 +9,10 @@ public partial class PrediosService
         ResultExecution.ExecuteAsync(async () =>
         {
             var documento = await tenantDbContext.Documentos!
-                .FirstOrDefaultAsync(documento => documento.Id == id && documento.IsActive);
+                .FirstOrDefaultAsync(documento =>
+                    documento.Id == id
+                    && documento.IsActive
+                    && documento.EliminadoEn == null);
 
             if (documento is null)
             {
@@ -22,7 +25,15 @@ public partial class PrediosService
                 throw new UnauthorizedAccessException("No se pudo identificar al usuario autenticado.");
             }
 
+            if (!await userContext.IsInRoleAsync("2"))
+            {
+                throw new UnauthorizedAccessException("No tiene permisos para eliminar documentos.");
+            }
+
+            // Único punto autorizado para cambiar la eliminación lógica.
             documento.IsActive = false;
+            documento.EliminadoEn = DateTime.UtcNow;
+            documento.EliminadoPor = userId;
             documento.UpdatedBy = userId;
             documento.UpdatedAt = DateTime.UtcNow;
 

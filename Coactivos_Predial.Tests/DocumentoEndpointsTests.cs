@@ -154,7 +154,9 @@ public sealed class FakeDocumentoFileService(string path) : IDocumentoFileServic
 {
     public Task<DocumentoFile?> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
-        return Task.FromResult<DocumentoFile?>(id == 1 ? new DocumentoFile(1, "test.pdf", path) : null);
+        return Task.FromResult<DocumentoFile?>(id == 1
+            ? new DocumentoFile(1, "test.pdf", path, "application/pdf")
+            : null);
     }
 }
 

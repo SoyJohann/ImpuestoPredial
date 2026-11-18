@@ -38,6 +38,14 @@ namespace Coactivos_Predial.Shared.Services.UserAccesor
             return principal.FindFirst(ClaimTypes.Name)?.Value;
         }
 
+        public async Task<bool> IsInRoleAsync(string role)
+        {
+            var principal = await GetPrincipalAsync();
+            return principal.Identity?.IsAuthenticated == true
+                && (principal.IsInRole(role)
+                    || principal.Claims.Any(claim => claim.Type == ClaimTypes.Role && claim.Value == role));
+        }
+
         private async Task<ClaimsPrincipal> GetPrincipalAsync()
         {
             if (_principal is not null)

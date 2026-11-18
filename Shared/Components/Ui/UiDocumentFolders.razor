@@ -1,0 +1,48 @@
+@namespace Coactivos_Predial.Shared.Components.Ui
+@using Coactivos_Predial.Shared.Services.Document
+@using Coactivos_Predial.Shared.Services.SPDios.Responses
+
+<div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+    @foreach (var carpeta in Carpetas)
+    {
+        <button type="button"
+                class="group flex min-h-[96px] flex-col justify-between rounded-ui border border-line bg-surface p-3 text-left transition-colors duration-150 hover:border-accent-700 hover:bg-accent-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700"
+                aria-label="Abrir carpeta @carpeta.Nombre"
+                @onclick="() => OnOpen.InvokeAsync(carpeta.TipoId)">
+            <div class="flex items-start justify-between gap-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-ui bg-paper text-accent-700 group-hover:bg-surface">
+                    <UiIcon Name="folder" Size="20" />
+                </span>
+                <span class="font-numeric text-sm font-semibold tabular-nums text-ink-900">@carpeta.Cantidad</span>
+            </div>
+            <div class="mt-3">
+                <p class="text-sm font-medium text-ink-900">@carpeta.Nombre</p>
+                <p class="mt-0.5 text-xs text-ink-500">@carpeta.Detalle</p>
+            </div>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DocumentoDto> Documentos { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<TipoDocumentoDto> Tipos { get; set; } = [];
+    [Parameter] public EventCallback<int> OnOpen { get; set; }
+
+    private sealed record Carpeta(int TipoId, string Nombre, int Cantidad, string Detalle);
+
+    private IReadOnlyList<Carpeta> Carpetas => Tipos
+        .OrderBy(tipo => tipo.Orden)
+        .ThenBy(tipo => tipo.Nombre)
+        .Select(tipo =>
+        {
+            var docs = Documentos.Where(documento => documento.TipoDocumentoId == tipo.Id).ToList();
+            var ultima = docs.Count == 0 ? null : docs.Max(documento => documento.Fecha);
+            var detalle = docs.Count == 0
+                ? "Sin documentos"
+                : ultima is null
+                    ? $"{docs.Count} documento{(docs.Count == 1 ? "" : "s")}"
+                    : $"Última carga {ultima:dd/MM/yyyy}";
+            return new Carpeta(tipo.Id, tipo.Nombre, docs.Count, detalle);
+        })
+        .ToList();
+}

@@ -60,15 +60,19 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
 
 // Tenant DbContext (cadena dinámica por circuito)
-builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
+// EF design-time usa TenantDbContextFactory; se omite este registro al generar migraciones.
+if (!EF.IsDesignTime)
 {
-    var tenant = sp.GetRequiredService<ITenantProvider>();
-    if (tenant.Municipio is null)
-        throw new InvalidOperationException("Tenant no inicializado");
+    builder.Services.AddDbContext<TenantDbContext>((sp, options) =>
+    {
+        var tenant = sp.GetRequiredService<ITenantProvider>();
+        if (tenant.Municipio is null)
+            throw new InvalidOperationException("Tenant no inicializado");
 
-    var template = builder.Configuration.GetConnectionString("DefaultConnectionTemplate")!;
-    options.UseNpgsql(template.Replace("{Database}", tenant.Municipio));
-});
+        var template = builder.Configuration.GetConnectionString("DefaultConnectionTemplate")!;
+        options.UseNpgsql(template.Replace("{Database}", tenant.Municipio));
+    });
+}
 
 // Fábrica de conexiones de tenant para Dapper
 builder.Services.AddScoped<ITenantConnectionFactory, TenantConnectionFactory>();
@@ -76,8 +80,10 @@ builder.Services.AddScoped<ITenantConnectionFactory, TenantConnectionFactory>();
 // Servicios de conexión y usuario
 builder.Services.AddScoped<IConnectionService, ConnectionService>();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
+builder.Services.AddScoped<IDocumentoStorageService, DocumentoStorageService>();
 builder.Services.AddScoped<IDocumentoFileService, DocumentoFileService>();
 builder.Services.AddScoped<IDocumentoLinkService, DocumentoLinkService>();
+builder.Services.AddScoped<ITiposDocumentoService, TiposDocumentoService>();
 
 // Servicios de negocio
 builder.Services.AddScoped<ICoactivosService, CoactivosService>();
@@ -104,7 +110,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.AccessDeniedPath = "/Forbidden/";
         options.LoginPath = "/";
         options.Events.OnRedirectToLogin = context =>

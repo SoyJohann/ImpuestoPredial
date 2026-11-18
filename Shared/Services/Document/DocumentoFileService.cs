@@ -1,11 +1,10 @@
 using Coactivos_Predial.Shared.AppDbContext;
-using Coactivos_Predial.Shared.Services.Document.Enums;
-using Coactivos_Predial.Shared.Services.SDatabase;
+using Coactivos_Predial.Shared.Services.Document;
 using Microsoft.EntityFrameworkCore;
 
 namespace Coactivos_Predial.Shared.Services.DocumentoFiles;
 
-public sealed record DocumentoFile(int Id, string Nombre, string Path);
+public sealed record DocumentoFile(int Id, string NombreDescarga, string Path, string MimeType);
 
 public interface IDocumentoFileService
 {
@@ -14,46 +13,43 @@ public interface IDocumentoFileService
 
 public sealed class DocumentoFileService : IDocumentoFileService
 {
-    private readonly TenantDbContext _tenantDb;
-    private readonly IConnectionService _connectionService;
+    private const string DefaultMimeType = "application/pdf";
 
-    public DocumentoFileService(TenantDbContext tenantDb, IConnectionService connectionService)
+    private readonly TenantDbContext _tenantDb;
+    private readonly IDocumentoStorageService _storage;
+
+    public DocumentoFileService(TenantDbContext tenantDb, IDocumentoStorageService storage)
     {
         _tenantDb = tenantDb;
-        _connectionService = connectionService;
+        _storage = storage;
     }
 
     public async Task<DocumentoFile?> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
         var documento = await _tenantDb.Documentos!
             .AsNoTracking()
-            .FirstOrDefaultAsync(documento => documento.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(documento =>
+                documento.Id == id
+                && documento.IsActive
+                && documento.EliminadoEn == null, cancellationToken);
 
-        // Un módulo no definido no tiene carpeta de almacenamiento asignada.
-        if (documento is null
-            || string.IsNullOrWhiteSpace(documento.Ruta)
-            || !Enum.IsDefined(documento.Modulo)) return null;
+        if (documento is null || !_storage.TryResolver(documento, out var fullPath))
+            return null;
 
-        var baseFolder = _connectionService.GetStorageStringForModulo(documento.Modulo);
-        if (!TryResolvePath(baseFolder, documento.Ruta, out var fileName, out var fullPath)) return null;
-        return new DocumentoFile(documento.Id, documento.Nombre, fullPath);
+        // El nombre de descarga es el original saneado; los documentos heredados
+        // caen al nombre del archivo almacenado en Ruta.
+        var nombreDescarga = !string.IsNullOrWhiteSpace(documento.NombreArchivo)
+            ? documento.NombreArchivo
+            : Path.GetFileName((documento.Ruta ?? string.Empty).Replace('\\', '/'));
+
+        if (string.IsNullOrWhiteSpace(nombreDescarga))
+            nombreDescarga = Path.GetFileName(fullPath);
+
+        var mimeType = string.IsNullOrWhiteSpace(documento.MimeType) ? DefaultMimeType : documento.MimeType;
+        return new DocumentoFile(documento.Id, nombreDescarga, fullPath, mimeType);
     }
 
-    public static bool TryResolvePath(string baseFolder, string storedPath, out string fileName, out string fullPath)
-    {
-        var normalizedStoredPath = storedPath?.Replace('\\', '/') ?? string.Empty;
-        fileName = Path.GetFileName(normalizedStoredPath);
-        fullPath = string.Empty;
-        if (string.IsNullOrWhiteSpace(baseFolder)
-            || string.IsNullOrWhiteSpace(storedPath)
-            || fileName is "" or "." or ".."
-            || normalizedStoredPath.Split('/').Any(segment => segment is "." or "..")) return false;
-
-        var fullBase = Path.GetFullPath(baseFolder);
-        fullPath = Path.GetFullPath(Path.Combine(fullBase, fileName));
-
-        var normalizedBase = fullBase.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-            + Path.DirectorySeparatorChar;
-        return fullPath.StartsWith(normalizedBase, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-    }
+    /// <summary>Compatibilidad con pruebas y llamadas heredadas.</summary>
+    public static bool TryResolvePath(string baseFolder, string storedPath, out string fileName, out string fullPath) =>
+        DocumentoStoragePaths.TryResolveLegacyPath(baseFolder, storedPath, out fileName, out fullPath);
 }

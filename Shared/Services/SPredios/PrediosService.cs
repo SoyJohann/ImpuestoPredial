@@ -1,4 +1,5 @@
 using Coactivos_Predial.Shared.AppDbContext;
+using Coactivos_Predial.Shared.Services.Document;
 using Coactivos_Predial.Shared.Services.SDatabase;
 using Coactivos_Predial.Shared.Services.UserAccesor;
 
@@ -11,6 +12,7 @@ namespace Coactivos_Predial.Shared.Services.SPredios;
 public partial class PrediosService (
     ITenantConnectionFactory connFactory,
     TenantDbContext tenantDbContext,
-    IUserContextService userContext) : IPrediosService
+    IUserContextService userContext,
+    IDocumentoStorageService storage) : IPrediosService
 {
 }

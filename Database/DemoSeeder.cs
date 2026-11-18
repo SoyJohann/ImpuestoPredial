@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using Coactivos_Predial.Shared.AppDbContext;
 using Coactivos_Predial.Shared.Models;
+using Coactivos_Predial.Shared.Services.Document;
 using Coactivos_Predial.Shared.Services.Document.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -91,6 +93,10 @@ internal static class DemoSeeder
         var storage = ResolveStorageFolder(configuration);
         Directory.CreateDirectory(storage);
 
+        var tipos = await db.TiposDocumento
+            .Where(tipo => tipo.Modulo == Modulo.IndustriaComercio)
+            .ToDictionaryAsync(tipo => tipo.Nombre, tipo => tipo.Id);
+
         var propietariosCreados = 0;
         var negociosCreados = 0;
         var documentosCreados = 0;
@@ -143,30 +149,52 @@ internal static class DemoSeeder
                 foreach (var nombreDocumento in negocio.Documentos)
                 {
                     var archivo = NombreArchivo(dato.Documento, negocio.Nombre, nombreDocumento);
-                    var rutaCompleta = Path.Combine(storage, archivo);
+                    var tipoId = tipos.TryGetValue(nombreDocumento, out var id)
+                        ? id
+                        : tipos["Por clasificar"];
 
-                    var existeDocumento = await db.Documentos
-                        .AnyAsync(d => d.ContribuyenteId == contribuyente.Id && d.Nombre == nombreDocumento);
+                    var existente = await db.Documentos
+                        .FirstOrDefaultAsync(d => d.ContribuyenteId == contribuyente.Id && d.Nombre == nombreDocumento);
 
-                    if (!existeDocumento)
+                    var titulo = $"{negocio.Nombre} - {nombreDocumento}";
+
+                    if (existente is null)
                     {
+                        var storageKey = DocumentoStoragePaths.CreateStorageKey();
+                        var rutaCompleta = DocumentoStoragePaths.GetFullPath(storage, storageKey);
+                        var bytes = GenerarPdf(titulo);
+                        Directory.CreateDirectory(Path.GetDirectoryName(rutaCompleta)!);
+                        await File.WriteAllBytesAsync(rutaCompleta, bytes);
+
                         db.Documentos.Add(new Documentos
                         {
                             ContribuyenteId = contribuyente.Id,
                             Modulo = Modulo.IndustriaComercio,
+                            TipoDocumentoId = tipoId,
                             Nombre = nombreDocumento,
-                            Fecha = negocio.InicioActividad,
-                            Ruta = archivo
+                            NombreArchivo = DocumentoStoragePaths.SanitizeFileName(archivo),
+                            StorageKey = storageKey,
+                            MimeType = "application/pdf",
+                            Tamano = bytes.LongLength,
+                            HashSha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(),
+                            Fecha = negocio.InicioActividad
                         });
 
                         await db.SaveChangesAsync();
                         documentosCreados++;
+                        continue;
                     }
 
-                    if (!File.Exists(rutaCompleta))
+                    string? rutaExistente = null;
+                    if (!string.IsNullOrWhiteSpace(existente.StorageKey))
+                        rutaExistente = DocumentoStoragePaths.GetFullPath(storage, existente.StorageKey);
+                    else if (!string.IsNullOrWhiteSpace(existente.Ruta))
+                        rutaExistente = Path.Combine(storage, Path.GetFileName(existente.Ruta));
+
+                    if (!string.IsNullOrWhiteSpace(rutaExistente) && !File.Exists(rutaExistente))
                     {
-                        var titulo = $"{negocio.Nombre} - {nombreDocumento}";
-                        await File.WriteAllBytesAsync(rutaCompleta, GenerarPdf(titulo));
+                        Directory.CreateDirectory(Path.GetDirectoryName(rutaExistente)!);
+                        await File.WriteAllBytesAsync(rutaExistente, GenerarPdf(titulo));
                     }
                 }
             }

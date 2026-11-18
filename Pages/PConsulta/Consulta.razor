@@ -4,13 +4,15 @@
 @using Coactivos_Predial.Shared.Services.SDatabase
 @using Coactivos_Predial.Shared.Services.SPropietarios;
 @using Coactivos_Predial.Shared.Services.Document
+@using Coactivos_Predial.Shared.Services.Document.Enums
 @using Coactivos_Predial.Shared.Services.SPredios
 
 @rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IDocumentoLinkService DocumentoLinkService
-@inject IConnectionService _connectionService
+@inject ITiposDocumentoService tiposDocumentoService
+@inject ITenantProvider Tenant
 @inject IPrediosService prediosService
 @inject IpropietariosService propietariosService
 
@@ -167,72 +169,89 @@ else if (!busquedaRealizada)
                 <UiButton Variant="ghost" Size="sm" OnClick="ActualizarDocumentos" Title="Actualizar" AriaLabel="Actualizar documentos">
                     <UiIcon Name="refresh" />
                 </UiButton>
-                <UiButton Variant="primary" Size="sm" OnClick="AbrirModalSubir">
+                <UiButton Variant="primary" Size="sm" OnClick="@(() => AbrirModalSubir())">
                     <UiIcon Name="upload" />
                     Subir PDF
                 </UiButton>
             </Actions>
 
             <ChildContent>
-                @if (DocumentosDto is null || !DocumentosDto.Any())
+                @if (carpetaSeleccionada is null)
                 {
-                    <UiEmpty Icon="file-text"
-                             Title="Este predio aún no tiene documentos"
-                             Message="Suba un PDF de hasta 4 MB con el detalle que lo identifique.">
-                        <Action>
-                            <UiButton Variant="secondary" Size="sm" OnClick="AbrirModalSubir">
-                                <UiIcon Name="upload" />
-                                Subir PDF
-                            </UiButton>
-                        </Action>
-                    </UiEmpty>
+                    <UiDocumentFolders Documentos="DocumentosDto"
+                                       Tipos="TiposDocumento"
+                                       OnOpen="AbrirCarpeta" />
                 }
                 else
                 {
-                    <div class="border-b border-line px-3 py-2">
-                        <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
-                               class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
+                    <div class="flex items-center justify-between gap-3 border-b border-line px-3 py-2">
+                        <UiButton Variant="ghost" Size="sm" OnClick="CerrarCarpeta">
+                            <UiIcon Name="chevron-left" />
+                            Todas las carpetas
+                        </UiButton>
+                        <span class="text-xs text-ink-500">@NombreCarpeta(carpetaSeleccionada.Value)</span>
                     </div>
-                    <UiTable Class="max-h-[calc(100vh-380px)] min-h-[160px] overscroll-contain">
-                        <Header>
-                            <tr>
-                                <th>Documento</th>
-                                <th>Fecha</th>
-                                <th class="text-right">Acciones</th>
-                            </tr>
-                        </Header>
-                        <ChildContent>
-                            @foreach (var doc in DocumentosFiltrados)
-                            {
+
+                    @if (!DocumentosFiltrados.Any())
+                    {
+                        <UiEmpty Icon="folder-open"
+                                 Title="Esta carpeta no tiene documentos"
+                                 Message="Cargue un PDF en esta carpeta.">
+                            <Action>
+                                <UiButton Variant="secondary" Size="sm" OnClick="@(() => AbrirModalSubir(carpetaSeleccionada))">
+                                    <UiIcon Name="upload" />
+                                    Subir PDF
+                                </UiButton>
+                            </Action>
+                        </UiEmpty>
+                    }
+                    else
+                    {
+                        <div class="border-b border-line px-3 py-2">
+                            <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
+                                   class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
+                        </div>
+                        <UiTable Class="max-h-[calc(100vh-380px)] min-h-[160px] overscroll-contain">
+                            <Header>
                                 <tr>
-                                    <td>
-                                        <p class="font-medium text-ink-900">@doc.Nombre</p>
-                                        <p class="font-numeric max-w-[320px] truncate text-xs text-ink-500">@doc.Ruta</p>
-                                    </td>
-                                    <td class="font-numeric">@FechaTexto(doc.Fecha)</td>
-                                    <td class="actions">
-                                        <div class="flex items-center justify-end gap-1">
-                                            <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.Id))">
-                                                <UiIcon Name="file-text" />
-                                                Ver
-                                            </UiButton>
-                                            <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.Id/descargar">
-                                                <UiIcon Name="download" /> Descargar
-                                            </a>
-                                            <AuthorizeView Roles="2">
-                                                <Authorized>
-                                                    <UiButton Variant="danger" Size="sm" OnClick="@((e) => PermisoEliminar(doc))">
-                                                        <UiIcon Name="trash" />
-                                                        Eliminar
-                                                    </UiButton>
-                                                </Authorized>
-                                            </AuthorizeView>
-                                        </div>
-                                    </td>
+                                    <th>Documento</th>
+                                    <th>Fecha</th>
+                                    <th class="text-right">Acciones</th>
                                 </tr>
-                            }
-                        </ChildContent>
-                    </UiTable>
+                            </Header>
+                            <ChildContent>
+                                @foreach (var doc in DocumentosFiltrados)
+                                {
+                                    <tr>
+                                        <td>
+                                            <p class="font-medium text-ink-900">@doc.Nombre</p>
+                                            <p class="font-numeric max-w-[320px] truncate text-xs text-ink-500">@(doc.NombreArchivo ?? doc.Ruta)</p>
+                                        </td>
+                                        <td class="font-numeric">@FechaTexto(doc.Fecha)</td>
+                                        <td class="actions">
+                                            <div class="flex items-center justify-end gap-1">
+                                                <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.Id))">
+                                                    <UiIcon Name="file-text" />
+                                                    Ver
+                                                </UiButton>
+                                                <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.Id/descargar">
+                                                    <UiIcon Name="download" /> Descargar
+                                                </a>
+                                                <AuthorizeView Roles="2">
+                                                    <Authorized>
+                                                        <UiButton Variant="danger" Size="sm" OnClick="@((e) => PermisoEliminar(doc))">
+                                                            <UiIcon Name="trash" />
+                                                            Eliminar
+                                                        </UiButton>
+                                                    </Authorized>
+                                                </AuthorizeView>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </ChildContent>
+                        </UiTable>
+                    }
                 }
             </ChildContent>
         </UiPanel>
@@ -304,7 +323,7 @@ else if (!busquedaRealizada)
             <span class="font-medium text-ink-900">@docPendienteEliminar?.Nombre</span>.
         </p>
         <p class="font-numeric mt-2 break-all rounded-ui border border-line bg-paper px-3 py-2 text-xs text-ink-500">
-            @docPendienteEliminar?.Ruta
+            @(docPendienteEliminar?.NombreArchivo ?? docPendienteEliminar?.Ruta)
         </p>
     </ChildContent>
     <Footer>
@@ -323,6 +342,15 @@ else if (!busquedaRealizada)
           Subtitle="Un archivo PDF de hasta 4 MB.">
     <ChildContent>
         <div class="space-y-3">
+            <UiField Label="Tipo de documento" For="documento-tipo">
+                <UiSelect Id="documento-tipo" @bind-Value="tipoDocumentoSeleccionado">
+                    @foreach (var tipo in TiposDocumento)
+                    {
+                        <option value="@tipo.Id">@tipo.Nombre</option>
+                    }
+                </UiSelect>
+            </UiField>
+
             <UiField Label="Detalle del documento" For="documento-nombre">
                 <UiInput Id="documento-nombre"
                          @bind-Value="Documentos.Nombre"
@@ -333,7 +361,7 @@ else if (!busquedaRealizada)
             <UiField Label="Archivo PDF" For="documento-archivo">
                 <UiFileDrop @key="Documentos"
                             Id="documento-archivo"
-                            FileName="@Documentos.Ruta"
+                            FileName="@archivoSeleccionado"
                             Accept=".pdf"
                             Help="Solo archivos PDF, máximo 4 MB."
                             OnChange="ArchivoSeleccionado"
@@ -346,7 +374,7 @@ else if (!busquedaRealizada)
         <UiButton Variant="primary"
                   OnClick="SubirDocumento"
                   Loading="@subiendo"
-                  Disabled="@(subiendo || string.IsNullOrWhiteSpace(Documentos.Nombre) || string.IsNullOrWhiteSpace(Documentos.Ruta) || loadedFiles.Count != 1)">
+                  Disabled="@(subiendo || string.IsNullOrWhiteSpace(Documentos.Nombre) || string.IsNullOrWhiteSpace(archivoSeleccionado) || loadedFiles.Count != 1)">
             <UiIcon Name="upload" />
             Subir PDF
         </UiButton>

@@ -106,11 +106,6 @@
 
     protected override void OnInitialized()
     {
-        // Solo la búsqueda de predios reutiliza el último código seleccionado.
-        if (!EsContribuyente)
-        {
-            documento = busquedaService.ObtenerUltimoCodigoSeleccionado();
-        }
     }
 
     private IEnumerable<FilaBusqueda> GetPaginaActual()

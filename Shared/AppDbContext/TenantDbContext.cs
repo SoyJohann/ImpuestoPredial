@@ -12,6 +12,7 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
     public DbSet<Parametros> Parametros => Set<Parametros>();
     public DbSet<Importados> Importados => Set<Importados>();
     public DbSet<Documentos> Documentos => Set<Documentos>();
+    public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
     public DbSet<Procesos> Procesos => Set<Procesos>();
     public DbSet<Contribuyente> Contribuyentes => Set<Contribuyente>();
 
@@ -62,6 +63,20 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
             .Property(documento => documento.Modulo)
             .HasConversion<int>();
 
+        modelBuilder.Entity<TipoDocumento>()
+            .Property(tipo => tipo.Modulo)
+            .HasConversion<int>();
+
+        modelBuilder.Entity<TipoDocumento>()
+            .HasIndex(tipo => new { tipo.Modulo, tipo.Nombre })
+            .IsUnique();
+
+        modelBuilder.Entity<Documentos>()
+            .HasOne(documento => documento.TipoDocumento)
+            .WithMany(tipo => tipo.Documentos)
+            .HasForeignKey(documento => documento.TipoDocumentoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<Documentos>()
             .HasOne(documento => documento.Contribuyente)
             .WithMany(contribuyente => contribuyente.Documentos)
@@ -82,6 +97,9 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
         modelBuilder.Entity<Documentos>()
             .HasIndex(d => new { d.Modulo, d.IsActive });
 
+        modelBuilder.Entity<Documentos>()
+            .HasIndex(d => new { d.Modulo, d.TipoDocumentoId, d.IsActive });
+
         modelBuilder.Entity<Procesos>()
             .Property(proceso => proceso.TipoProceso)
             .HasConversion<int>();
@@ -91,7 +109,8 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
             foreach (var property in entityType.GetProperties().Where(property =>
                          (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
                          && property.Name != nameof(EntityWithTraceability.CreatedAt)
-                         && property.Name != nameof(EntityWithTraceability.UpdatedAt)))
+                         && property.Name != nameof(EntityWithTraceability.UpdatedAt)
+                         && property.Name != nameof(Coactivos_Predial.Shared.Models.Documentos.EliminadoEn)))
             {
                 property.SetColumnType("date");
             }
