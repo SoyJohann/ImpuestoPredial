@@ -1,49 +1,27 @@
 using System.Security.Cryptography;
 using Coactivos_Predial.Shared.Models;
 using Coactivos_Predial.Shared.Services.Document.Enums;
+using Coactivos_Predial.Shared.Services.Document.Interfaces;
+using Coactivos_Predial.Shared.Services.Document.Reponses;
 using Coactivos_Predial.Shared.Services.SDatabase;
-
 namespace Coactivos_Predial.Shared.Services.Document;
-
-public sealed record DocumentoGuardado(
-    string StorageKey,
-    string RutaCompleta,
-    long Tamano,
-    string HashSha256,
-    string MimeType);
-
-public interface IDocumentoStorageService
-{
-    string CrearStorageKey();
-    string ObtenerCarpetaBase(Modulo modulo);
-    string ResolverRuta(Modulo modulo, string storageKey);
-    bool TryResolver(Documentos documento, out string rutaCompleta);
-    Task<DocumentoGuardado> GuardarAsync(Modulo modulo, Stream contenido, CancellationToken cancellationToken);
-    void EliminarArchivo(string rutaCompleta);
-}
 
 /// <summary>
 /// Única puerta de entrada al disco documental. Decide la ruta a partir de la
 /// clave opaca y valida el contenido real del PDF antes de guardarlo.
 /// </summary>
-public sealed class DocumentoStorageService : IDocumentoStorageService
+public sealed class DocumentoStorageService(
+    IConnectionService connectionService,
+    ILogger<DocumentoStorageService> logger)
+    : IDocumentoStorageService
 {
-    public const long MaxFileSize = 4 * 1024 * 1024;
+    private const long MaxFileSize = 4 * 1024 * 1024;
     private const string PdfMimeType = "application/pdf";
-
-    private readonly IConnectionService _connectionService;
-    private readonly ILogger<DocumentoStorageService> _logger;
-
-    public DocumentoStorageService(IConnectionService connectionService, ILogger<DocumentoStorageService> logger)
-    {
-        _connectionService = connectionService;
-        _logger = logger;
-    }
 
     public string CrearStorageKey() => DocumentoStoragePaths.CreateStorageKey();
 
     public string ObtenerCarpetaBase(Modulo modulo) =>
-        _connectionService.GetStorageStringForModulo(modulo).Trim();
+        connectionService.GetStorageStringForModulo(modulo).Trim();
 
     public string ResolverRuta(Modulo modulo, string storageKey) =>
         DocumentoStoragePaths.GetFullPath(ObtenerCarpetaBase(modulo), storageKey);
@@ -52,16 +30,22 @@ public sealed class DocumentoStorageService : IDocumentoStorageService
     {
         rutaCompleta = string.Empty;
 
+        if (documento is null)
+        {
+            Console.WriteLine("TryResolver: documento is null");
+            return false;
+        }
+
         if (!Enum.IsDefined(documento.Modulo))
         {
-            _logger.LogWarning("Documento {DocumentoId} tiene un módulo desconocido {Modulo}.", documento.Id, (int)documento.Modulo);
+            logger.LogWarning("Documento {DocumentoId} tiene un módulo desconocido {Modulo}.", documento.Id, (int)documento.Modulo);
             return false;
         }
 
         var baseFolder = ObtenerCarpetaBase(documento.Modulo);
         if (string.IsNullOrWhiteSpace(baseFolder))
         {
-            _logger.LogWarning("No hay carpeta de almacenamiento configurada para el módulo {Modulo}.", documento.Modulo);
+            logger.LogWarning("No hay carpeta de almacenamiento configurada para el módulo {Modulo}.", documento.Modulo);
             return false;
         }
 
@@ -74,14 +58,14 @@ public sealed class DocumentoStorageService : IDocumentoStorageService
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
             {
-                _logger.LogWarning(ex, "StorageKey inválido en el documento {DocumentoId}.", documento.Id);
+                logger.LogWarning(ex, "StorageKey inválido en el documento {DocumentoId}.", documento.Id);
                 return false;
             }
 
             if (File.Exists(rutaCompleta))
                 return true;
 
-            _logger.LogWarning(
+            logger.LogWarning(
                 "No se encontró el archivo del documento {DocumentoId} para la StorageKey {StorageKey}.",
                 documento.Id,
                 documento.StorageKey);
@@ -90,20 +74,20 @@ public sealed class DocumentoStorageService : IDocumentoStorageService
 
         if (string.IsNullOrWhiteSpace(documento.Ruta))
         {
-            _logger.LogWarning("El documento {DocumentoId} no tiene StorageKey ni Ruta.", documento.Id);
+            logger.LogWarning("El documento {DocumentoId} no tiene StorageKey ni Ruta.", documento.Id);
             return false;
         }
 
         if (!DocumentoStoragePaths.TryResolveLegacyPath(baseFolder, documento.Ruta, out _, out rutaCompleta))
         {
-            _logger.LogWarning("La ruta heredada del documento {DocumentoId} no es válida.", documento.Id);
+            logger.LogWarning("La ruta heredada del documento {DocumentoId} no es válida.", documento.Id);
             return false;
         }
 
         if (File.Exists(rutaCompleta))
             return true;
 
-        _logger.LogWarning(
+        logger.LogWarning(
             "No se encontró el archivo heredado del documento {DocumentoId} en {Ruta}.",
             documento.Id,
             rutaCompleta);
@@ -160,7 +144,7 @@ public sealed class DocumentoStorageService : IDocumentoStorageService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "No fue posible eliminar el archivo {Ruta}.", rutaCompleta);
+            logger.LogWarning(ex, "No fue posible eliminar el archivo {Ruta}.", rutaCompleta);
         }
     }
 }

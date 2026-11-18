@@ -5,6 +5,7 @@
 @using Coactivos_Predial.Shared.Services.Document.Enums
 @using Coactivos_Predial.Shared.Services.SDatabase
 @using Coactivos_Predial.Shared.Services.SContribuyentes
+@using Coactivos_Predial.Shared.Services.SDocumentos
 @using Coactivos_Predial.Shared.Services.SPDios.Responses
 
 @rendermode InteractiveServer
@@ -13,6 +14,7 @@
 @inject ITiposDocumentoService tiposDocumentoService
 @inject ITenantProvider Tenant
 @inject IJSRuntime JSRuntime
+@inject Coactivos_Predial.Shared.Services.SDocumentos.SDocumentosService sDocumentosService
 
 <PageTitle>Consulta de contribuyente</PageTitle>
 
@@ -173,21 +175,16 @@ else if (busquedaRealizada && Contribuyentes.Count > 0)
                     </Actions>
 
                     <ChildContent>
-                        @if (carpetaSeleccionada is null)
-                        {
-                            <UiDocumentFolders Documentos="DocumentosDto"
-                                               Tipos="TiposDocumento"
-                                               OnOpen="AbrirCarpeta" />
-                        }
-                        else
-                        {
-                            <div class="flex items-center justify-between gap-3 border-b border-line px-3 py-2">
-                                <UiButton Variant="ghost" Size="sm" OnClick="CerrarCarpeta">
-                                    <UiIcon Name="chevron-left" />
-                                    Todas las carpetas
-                                </UiButton>
-                                <span class="text-xs text-ink-500">@NombreCarpeta(carpetaSeleccionada.Value)</span>
-                            </div>
+                        <UiDocumentExplorer Documentos="DocumentosDto"
+                                           Tipos="TiposDocumento"
+                                           CarpetaSeleccionadaId="carpetaSeleccionada"
+                                           OnOpenCarpeta="AbrirCarpeta"
+                                           OnCerrarCarpeta="CerrarCarpeta"
+                                           OnVer="AbrirPdf"
+                                           OnDescargar="DescargarPdf"
+                                           OnCambiarTipo="async doc => await CambiarTipoIndividual(doc)"
+                                           OnDescargarCarpeta="DescargarCarpeta"
+                                           OnActualizar="ActualizarDocumentos" />
 
                             @if (!DocumentosFiltrados.Any())
                             {
@@ -204,7 +201,7 @@ else if (busquedaRealizada && Contribuyentes.Count > 0)
                                 <UiTable Class="max-h-[calc(100vh-380px)] min-h-[160px] overscroll-contain">
                                     <Header>
                                         <tr>
-                                            <th>Documento</th>
+                                            <th><input type="checkbox" class="select-item" /></th>
                                             <th>Fecha</th>
                                             <th class="text-right">Acciones</th>
                                         </tr>
@@ -237,6 +234,12 @@ else if (busquedaRealizada && Contribuyentes.Count > 0)
                         }
                     </ChildContent>
                 </UiPanel>
+                <div class="mt-4 flex items-center justify-end gap-3">
+                    <UiButton Variant="primary" Size="sm" OnClick="CambiarTipoLote">
+                        <UiIcon Name="swap-horizontal" />
+                        Cambiar tipo
+                    </UiButton>
+                </div>
             </div>
         }
     </div>
@@ -244,6 +247,36 @@ else if (busquedaRealizada && Contribuyentes.Count > 0)
 
 <!-- Visor de PDF (fuera del bloque del contribuyente para que siempre exista) -->
 <PdfViewerModal @ref="pdfViewerModal" />
+
+<!-- Modal para cambiar tipo de documento -->
+<UiDialog Open="@mostrarModalCambiarTipo"
+          OnClose="CancelarCambiarTipo"
+          Title="Cambiar tipo documental"
+          Subtitle="@(documentoParaCambiar is null ? "" : documentoParaCambiar.Nombre)"
+          Size="sm">
+    <ChildContent>
+        <div class="space-y-3">
+            <UiField Label="Nuevo tipo de documento" For="cambiar-tipo">
+                <UiSelect Id="cambiar-tipo" @bind-Value="tipoSeleccionadoParaCambiar">
+                    @foreach (var tipo in TiposDocumento)
+                    {
+                        <option value="@tipo.Id">@tipo.Nombre</option>
+                    }
+                </UiSelect>
+            </UiField>
+            <p class="text-xs text-ink-500">
+                El documento se moverá a la carpeta seleccionada. El archivo físico no se modificará.
+            </p>
+        </div>
+    </ChildContent>
+    <Footer>
+        <UiButton Variant="secondary" OnClick="CancelarCambiarTipo">Cancelar</UiButton>
+        <UiButton Variant="primary" OnClick="ConfirmarCambiarTipo">
+            <UiIcon Name="swap-horizontal" />
+            Cambiar tipo
+        </UiButton>
+    </Footer>
+</UiDialog>
 
 <!-- Búsqueda de contribuyente por documento -->
 <UiDialog Open="@mostrarModalBusqueda"

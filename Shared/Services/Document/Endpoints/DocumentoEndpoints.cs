@@ -1,8 +1,8 @@
-using Coactivos_Predial.Shared.Services.DocumentoFiles;
+using Coactivos_Predial.Shared.Services.Document.Interfaces;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Net.Http.Headers;
 
-namespace Coactivos_Predial.Shared.Services.Document;
+namespace Coactivos_Predial.Shared.Services.Document.Endpoints;
 
 public static class DocumentoEndpoints
 {

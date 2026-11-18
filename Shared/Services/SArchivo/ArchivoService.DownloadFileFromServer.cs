@@ -1,6 +1,6 @@
 using Coactivos_Predial.Shared.Services.Common;
 
-namespace Coactivos_Predial.Shared.Services.FileHandler;
+namespace Coactivos_Predial.Shared.Services.SArchivo;
 
 public partial class ArchivoService
 {

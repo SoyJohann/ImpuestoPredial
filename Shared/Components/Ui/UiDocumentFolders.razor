@@ -2,33 +2,177 @@
 @using Coactivos_Predial.Shared.Services.Document
 @using Coactivos_Predial.Shared.Services.SPDios.Responses
 
-<div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
-    @foreach (var carpeta in Carpetas)
+<div class="file-explorer-window">
+    @if (CarpetaAbierta is null)
     {
-        <button type="button"
-                class="group flex min-h-[96px] flex-col justify-between rounded-ui border border-line bg-surface p-3 text-left transition-colors duration-150 hover:border-accent-700 hover:bg-accent-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-700"
-                aria-label="Abrir carpeta @carpeta.Nombre"
-                @onclick="() => OnOpen.InvokeAsync(carpeta.TipoId)">
-            <div class="flex items-start justify-between gap-3">
-                <span class="flex h-9 w-9 items-center justify-center rounded-ui bg-paper text-accent-700 group-hover:bg-surface">
-                    <UiIcon Name="folder" Size="20" />
-                </span>
-                <span class="font-numeric text-sm font-semibold tabular-nums text-ink-900">@carpeta.Cantidad</span>
+        <!-- Vista de carpetas (explorador de archivos) -->
+        <div class="folder-grid">
+            @foreach (var carpeta in Carpetas)
+            {
+                <div class="folder-card @(carpeta.Cantidad == 0 ? "empty" : "")"
+                     @ondblclick="() => OnOpen.InvokeAsync(carpeta.TipoId)"
+                     @oncontextmenu="e => AbrirMenuContextualCarpeta(carpeta.TipoId, e)"
+                     @oncontextmenu:preventDefault="true"
+                     draggable="true">
+                    <div class="folder-icon @(carpeta.Cantidad == 0 ? "gray" : (carpeta.TipoId % 2 == 0 ? "green" : "blue"))">
+                        <UiIcon Name="folder" Size="20" />
+                    </div>
+                    <span class="folder-count">@carpeta.Cantidad</span>
+                    <p class="folder-name">@carpeta.Nombre</p>
+                    <p class="folder-date">@carpeta.Detalle</p>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Vista de archivos dentro de la carpeta (explorador de archivos) -->
+        <div class="file-explorer-body">
+            <div class="mb-4 flex items-center justify-between">
+                <button type="button" class="ui-btn inline-flex items-center gap-1.5 rounded-ui border border-line px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-paper" @onclick="CerrarCarpeta">
+                    <UiIcon Name="chevron-left" Size="16" />
+                    Volver a carpetas
+                </button>
+                <span class="text-sm font-medium text-ink-900">@CarpetaAbierta.Nombre</span>
             </div>
-            <div class="mt-3">
-                <p class="text-sm font-medium text-ink-900">@carpeta.Nombre</p>
-                <p class="mt-0.5 text-xs text-ink-500">@carpeta.Detalle</p>
-            </div>
-        </button>
+
+            @if (!DocumentosFiltrados.Any())
+            {
+                <div class="flex flex-col items-center justify-center py-12 text-center">
+                    <span class="flex h-16 w-16 items-center justify-center rounded-ui bg-paper text-ink-400">
+                        <UiIcon Name="folder-open" Size="32" />
+                    </span>
+                    <p class="mt-4 text-sm font-medium text-ink-900">Esta carpeta no tiene documentos</p>
+                    <p class="mt-1 text-xs text-ink-500">Cargue un PDF en esta carpeta.</p>
+                </div>
+            }
+            else
+            {
+                <div class="file-grid">
+                    @foreach (var doc in DocumentosFiltrados)
+                    {
+                        <div class="file-card @(docSeleccionado == doc.Id ? "selected" : "")"
+                             @oncontextmenu="e => AbrirMenuContextual(doc.Id, e)"
+                             @oncontextmenu:preventDefault="true"
+                             @onclick="() => SeleccionarArchivo(doc.Id)">
+                            <input type="checkbox" class="file-checkbox" checked="@docSeleccionado == doc.Id" />
+                            <div class="file-thumb">
+                                <span class="pdf-badge">PDF</span>
+                                <span class="type-label">@CarpetaAbierta.Nombre</span>
+                                <UiIcon Name="file-text" Size="32" />
+                            </div>
+                            <p class="file-name" title="@doc.Nombre">@doc.Nombre</p>
+                            <p class="file-technical" title="@(doc.NombreArchivo ?? doc.Ruta)">@(doc.NombreArchivo ?? doc.Ruta)</p>
+                            <p class="file-date">@FechaTexto(doc.Fecha)</p>
+                            <div class="absolute right-1 top-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-surface/80 text-ink-700 hover:bg-accent-100" title="Ver" @onclick="() => OnVer.InvokeAsync(doc.Id)">
+                                    <UiIcon Name="eye" Size="12" />
+                                </button>
+                                <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-surface/80 text-ink-700 hover:bg-accent-100" title="Descargar" @onclick="() => OnDescargar.InvokeAsync(doc.Id)">
+                                    <UiIcon Name="download" Size="12" />
+                                </button>
+                                <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-surface/80 text-ink-700 hover:bg-accent-100" title="Cambiar tipo" @onclick="() => OnCambiarTipo.InvokeAsync(doc.Id)">
+                                    <UiIcon Name="swap-horizontal" Size="12" />
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
     }
 </div>
+
+@if (MostrarMenuContextual)
+{
+    <div class="fixed inset-0 z-40" @onclick="CerrarMenuContextual"></div>
+    <div class="context-menu" style="left: @menuX px; top: @menuY px; z-index: 50;">
+        @if (contextoArchivo is { } docId)
+        {
+            <button @onclick="() => OnVer.InvokeAsync(docId)">
+                <UiIcon Name="eye" Size="14" />
+                Ver documento
+            </button>
+            <button @onclick="() => OnDescargar.InvokeAsync(docId)">
+                <UiIcon Name="download" Size="14" />
+                Descargar PDF
+            </button>
+            <button @onclick="() => OnCambiarTipo.InvokeAsync(docId)">
+                <UiIcon Name="swap-horizontal" Size="14" />
+                Cambiar tipo documental
+            </button>
+            <div class="separator"></div>
+            <button class="danger" @onclick="() => OnEliminar.InvokeAsync(docId)">
+                <UiIcon Name="trash" Size="14" />
+                Eliminar documento
+            </button>
+        }
+        else if (contextoCarpeta is { } carpetaId)
+        {
+            <button @onclick="() => OnOpen.InvokeAsync(carpetaId)">
+                <UiIcon Name="folder-open" Size="14" />
+                Abrir carpeta
+            </button>
+            <button @onclick="() => OnSubir.InvokeAsync()">
+                <UiIcon Name="upload" Size="14" />
+                Subir archivo aquí
+            </button>
+            <div class="separator"></div>
+            <button @onclick="() => OnDescargarCarpeta.InvokeAsync(carpetaId)">
+                <UiIcon Name="download" Size="14" />
+                Descargar carpeta (.zip)
+            </button>
+        }
+        else
+        {
+            <button @onclick="() => OnSubir.InvokeAsync()">
+                <UiIcon Name="upload" Size="14" />
+                Subir nuevo documento
+            </button>
+            <button @onclick="() => OnActualizar.InvokeAsync()">
+                <UiIcon Name="refresh-cw" Size="14" />
+                Actualizar vista
+            </button>
+        }
+    </div>
+}
+
+@if (ArchivosSeleccionados.Count > 0)
+{
+    <div class="batch-bar">
+        <span class="count">@ArchivosSeleccionados.Count seleccionados</span>
+        <button @onclick="() => OnCambiarTipo.InvokeAsync(ArchivosSeleccionados.First())">
+            <UiIcon Name="swap-horizontal" Size="14" />
+            Cambiar tipo
+        </button>
+        <button @onclick="() => OnDescargar.InvokeAsync(ArchivosSeleccionados.First())">
+            <UiIcon Name="download" Size="14" />
+            Descargar
+        </button>
+        <button class="danger" @onclick="() => OnEliminar.InvokeAsync(ArchivosSeleccionados.First())">
+            <UiIcon Name="trash" Size="14" />
+            Eliminar
+        </button>
+    </div>
+}
 
 @code {
     [Parameter, EditorRequired] public IReadOnlyList<DocumentoDto> Documentos { get; set; } = [];
     [Parameter, EditorRequired] public IReadOnlyList<TipoDocumentoDto> Tipos { get; set; } = [];
+    [Parameter] public int? CarpetaSeleccionadaId { get; set; }
     [Parameter] public EventCallback<int> OnOpen { get; set; }
+    [Parameter] public EventCallback OnCerrarCarpeta { get; set; }
+    [Parameter] public EventCallback<int> OnVer { get; set; }
+    [Parameter] public EventCallback<int> OnDescargar { get; set; }
+    [Parameter] public EventCallback<int> OnCambiarTipo { get; set; }
+    [Parameter] public EventCallback<int> OnEliminar { get; set; }
+    [Parameter] public EventCallback OnSubir { get; set; }
+    [Parameter] public EventCallback<int> OnDescargarCarpeta { get; set; }
+    [Parameter] public EventCallback OnActualizar { get; set; }
 
     private sealed record Carpeta(int TipoId, string Nombre, int Cantidad, string Detalle);
+
+    private TipoDocumentoDto? CarpetaAbierta => Tipos.FirstOrDefault(t => t.Id == CarpetaSeleccionadaId);
 
     private IReadOnlyList<Carpeta> Carpetas => Tipos
         .OrderBy(tipo => tipo.Orden)
@@ -45,4 +189,63 @@
             return new Carpeta(tipo.Id, tipo.Nombre, docs.Count, detalle);
         })
         .ToList();
+
+    private IEnumerable<DocumentoDto> DocumentosFiltrados =>
+        CarpetaAbierta is null
+            ? Enumerable.Empty<DocumentoDto>()
+            : Documentos.Where(d => d.TipoDocumentoId == CarpetaAbierta.Id);
+
+    private int? docSeleccionado;
+    private bool MostrarMenuContextual = false;
+    private double menuX = 0;
+    private double menuY = 0;
+    private int? contextoArchivo = null;
+    private int? contextoCarpeta = null;
+    private List<int> ArchivosSeleccionados = new();
+
+    private void SeleccionarArchivo(int docId)
+    {
+        if (ArchivosSeleccionados.Contains(docId))
+        {
+            ArchivosSeleccionados.Remove(docId);
+            docSeleccionado = null;
+        }
+        else
+        {
+            ArchivosSeleccionados.Add(docId);
+            docSeleccionado = docId;
+        }
+    }
+
+    private void CerrarCarpeta() => OnCerrarCarpeta.InvokeAsync();
+
+    private void AbrirMenuContextual(int docId, MouseEventArgs e)
+    {
+        MostrarMenuContextual = true;
+        menuX = e.ClientX;
+        menuY = e.ClientY;
+        contextoArchivo = docId;
+        contextoCarpeta = null;
+    }
+
+    private void AbrirMenuContextualCarpeta(int carpetaId, MouseEventArgs e)
+    {
+        MostrarMenuContextual = true;
+        menuX = e.ClientX;
+        menuY = e.ClientY;
+        contextoArchivo = null;
+        contextoCarpeta = carpetaId;
+    }
+
+    private void CerrarMenuContextual()
+    {
+        MostrarMenuContextual = false;
+        contextoArchivo = null;
+        contextoCarpeta = null;
+    }
+
+    private static string FechaTexto(DateTime? fecha) =>
+        fecha is null || fecha == default || fecha.Value.Year <= 1
+            ? "—"
+            : fecha.Value.ToString("dd/MM/yyyy");
 }

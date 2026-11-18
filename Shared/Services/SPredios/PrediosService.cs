@@ -1,5 +1,6 @@
 using Coactivos_Predial.Shared.AppDbContext;
 using Coactivos_Predial.Shared.Services.Document;
+using Coactivos_Predial.Shared.Services.Document.Interfaces;
 using Coactivos_Predial.Shared.Services.SDatabase;
 using Coactivos_Predial.Shared.Services.UserAccesor;
 

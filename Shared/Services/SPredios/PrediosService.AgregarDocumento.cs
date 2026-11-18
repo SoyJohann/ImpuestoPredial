@@ -2,6 +2,7 @@ using Coactivos_Predial.Shared.Models;
 using Coactivos_Predial.Shared.Services.Common;
 using Coactivos_Predial.Shared.Services.Document;
 using Coactivos_Predial.Shared.Services.Document.Enums;
+using Coactivos_Predial.Shared.Services.Document.Reponses;
 using Coactivos_Predial.Shared.Services.SPredios.Requests;
 using Microsoft.EntityFrameworkCore;
 
@@ -53,7 +54,7 @@ public partial class PrediosService
                     NombreArchivo = DocumentoStoragePaths.SanitizeFileName(request.NombreArchivo),
                     StorageKey = guardado.StorageKey,
                     MimeType = guardado.MimeType,
-                    Tamano = guardado.Tamano,
+                    Size = guardado.Size,
                     HashSha256 = guardado.HashSha256,
                     Fecha = request.Fecha ?? DateTime.Today,
                     CreatedBy = userId,

@@ -31,7 +31,7 @@ public sealed class DocumentoStorageServiceTests : IDisposable
 
         Assert.EndsWith(".pdf", guardado.StorageKey);
         Assert.True(File.Exists(guardado.RutaCompleta));
-        Assert.Equal(bytes.LongLength, guardado.Tamano);
+        Assert.Equal(bytes.LongLength, guardado.Size);
         Assert.Equal(Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(), guardado.HashSha256);
         Assert.Equal("application/pdf", guardado.MimeType);
         Assert.Contains(Path.Combine(guardado.StorageKey[..2], guardado.StorageKey[2..4]), guardado.RutaCompleta);

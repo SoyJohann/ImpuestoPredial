@@ -12,6 +12,7 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
     public DbSet<Parametros> Parametros => Set<Parametros>();
     public DbSet<Importados> Importados => Set<Importados>();
     public DbSet<Documentos> Documentos => Set<Documentos>();
+   public DbSet<DocumentoTipoHistorial> DocumentoTipoHistorial => Set<DocumentoTipoHistorial>();
     public DbSet<TipoDocumento> TiposDocumento => Set<TipoDocumento>();
     public DbSet<Procesos> Procesos => Set<Procesos>();
     public DbSet<Contribuyente> Contribuyentes => Set<Contribuyente>();
@@ -84,6 +85,11 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // DocumentoTipoHistorial: excluir Fecha del convenio global "date"
+        modelBuilder.Entity<DocumentoTipoHistorial>()
+            .Property(h => h.Fecha)
+            .HasColumnType("timestamp with time zone");
+
         modelBuilder.Entity<Contribuyente>()
             .HasOne(c => c.Propietario)
             .WithMany(p => p.Contribuyentes)
@@ -110,7 +116,9 @@ public class TenantDbContext(DbContextOptions<TenantDbContext> options) : DbCont
                          (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
                          && property.Name != nameof(EntityWithTraceability.CreatedAt)
                          && property.Name != nameof(EntityWithTraceability.UpdatedAt)
-                         && property.Name != nameof(Coactivos_Predial.Shared.Models.Documentos.EliminadoEn)))
+                         && property.Name != nameof(Coactivos_Predial.Shared.Models.Documentos.EliminadoEn)
+                         && !(entityType.ClrType == typeof(Coactivos_Predial.Shared.Models.DocumentoTipoHistorial)
+                              && property.Name == nameof(Coactivos_Predial.Shared.Models.DocumentoTipoHistorial.Fecha))))
             {
                 property.SetColumnType("date");
             }

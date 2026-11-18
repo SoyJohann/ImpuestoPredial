@@ -210,10 +210,18 @@ public partial class Consulta
         errors.Clear();
     }
 
-    private void AbrirModalSubir(int? tipoId = null)
+    private Task AbrirModalSubir(int? tipoId)
     {
         LimpiarCarga(tipoId ?? carpetaSeleccionada);
         mostrarModalSubir = true;
+        return Task.CompletedTask;
+    }
+
+    private Task AbrirModalSubirSinParametro()
+    {
+        LimpiarCarga(carpetaSeleccionada);
+        mostrarModalSubir = true;
+        return Task.CompletedTask;
     }
 
     private void CerrarModalSubir() => mostrarModalSubir = false;
@@ -366,12 +374,14 @@ public partial class Consulta
     {
         carpetaSeleccionada = tipoId;
         filtroDocumentos = string.Empty;
+        StateHasChanged();
     }
 
     private void CerrarCarpeta()
     {
         carpetaSeleccionada = null;
         filtroDocumentos = string.Empty;
+        StateHasChanged();
     }
 
     private string NombreCarpeta(int tipoId) =>
@@ -399,16 +409,129 @@ public partial class Consulta
     private Task ActualizarDocumentos() =>
         Predio is { } predio ? CargarDocumentosAsync(predio.Id) : Task.CompletedTask;
 
+    private async Task DescargarCarpeta(int carpetaId)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "Descarga de carpeta no implementada aún.");
+    }
+
     private async Task AbrirPdf(int documentId)
     {
-        var links = await DocumentoLinkService.GetLinksAsync(documentId);
-        if (links is null)
+        try
         {
-            await JSRuntime.InvokeVoidAsync("alert", "No se pudo validar el acceso al documento.");
+            var links = await DocumentoLinkService.GetLinksAsync(documentId);
+            if (links is null)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "No se pudo validar el acceso al documento.");
+                return;
+            }
+
+            if (pdfViewerModal is not null)
+            {
+                await pdfViewerModal.OpenAsync(links.ViewUrl, links.DownloadUrl);
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "El visor de PDF no está disponible.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al abrir documento: {ex.Message}");
+        }
+    }
+
+    private async Task EliminarDocumento(int docId)
+    {
+        var doc = DocumentosDto.FirstOrDefault(d => d.Id == docId);
+        if (doc is not null)
+        {
+            await PermisoEliminar(doc);
+        }
+    }
+
+    private async Task DescargarPdf(int documentId)
+    {
+        var url = $"/api/documentos/{documentId}/descargar";
+        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private bool mostrarModalCambiarTipo;
+    private DocumentoDto? documentoParaCambiar;
+    private string tipoSeleccionadoParaCambiar = string.Empty;
+
+    private void AbrirCambiarTipo(DocumentoDto doc)
+    {
+        documentoParaCambiar = doc;
+        tipoSeleccionadoParaCambiar = doc.TipoDocumentoId.ToString();
+        mostrarModalCambiarTipo = true;
+    }
+
+    private async Task ConfirmarCambiarTipo()
+    {
+        if (documentoParaCambiar is null) return;
+        if (!int.TryParse(tipoSeleccionadoParaCambiar, out var tipoId) || tipoId <= 0)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Seleccione un tipo válido.");
             return;
         }
 
-        if (pdfViewerModal is not null) await pdfViewerModal.OpenAsync(links.ViewUrl, links.DownloadUrl);
+        var resultado = await sDocumentosService.CambiarTipoAsync(documentoParaCambiar.Id, tipoId);
+        if (resultado.IsSuccess)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Tipo actualizado correctamente");
+            if (Predio is { } predio)
+            {
+                await CargarDocumentosAsync(predio.Id);
+            }
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", resultado.Error ?? "Error al cambiar tipo");
+        }
+
+        mostrarModalCambiarTipo = false;
+        documentoParaCambiar = null;
+    }
+
+    private void CancelarCambiarTipo()
+    {
+        mostrarModalCambiarTipo = false;
+        documentoParaCambiar = null;
+    }
+
+    private async Task CambiarTipoIndividual(DocumentoDto doc)
+    {
+        AbrirCambiarTipo(doc);
+    }
+
+    private async Task CambiarTipoLote()
+    {
+        // Obtener los IDs de los documentos seleccionados
+        var ids = new List<int>();
+        // TODO: Implementar selección múltiple con checkboxes
+        if (ids.Count == 0)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Seleccione al menos un documento.");
+            return;
+        }
+
+        var tipoId = await JSRuntime.InvokeAsync<int>("prompt", "Ingrese el ID del nuevo tipo para el lote:");
+        if (tipoId > 0)
+        {
+            var resultado = await sDocumentosService.CambiarTipoMasivoAsync(ids, tipoId);
+            if (resultado.IsSuccess)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Tipos actualizados correctamente");
+                if (Predio is { } predio)
+                {
+                    await CargarDocumentosAsync(predio.Id);
+                }
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", resultado.Error ?? "Error al cambiar tipos");
+            }
+        }
     }
 
     // ---------------------------------------------------------------- Eliminar

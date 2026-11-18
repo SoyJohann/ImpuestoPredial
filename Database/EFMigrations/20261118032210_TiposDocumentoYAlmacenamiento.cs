@@ -59,7 +59,7 @@ namespace Coactivos_Predial.Database.EFMigrations
                 nullable: true);
 
             migrationBuilder.AddColumn<long>(
-                name: "Tamano",
+                name: "Size",
                 table: "Documentos",
                 type: "bigint",
                 nullable: true);
@@ -232,7 +232,7 @@ namespace Coactivos_Predial.Database.EFMigrations
                 table: "Documentos");
 
             migrationBuilder.DropColumn(
-                name: "Tamano",
+                name: "Size",
                 table: "Documentos");
 
             migrationBuilder.Sql("""ALTER TABLE "Documentos" ALTER COLUMN "TipoDocumentoId" SET DEFAULT 0;""");

@@ -8,7 +8,7 @@ namespace Coactivos_Predial.Shared.Services.Document;
 /// </summary>
 public static class DocumentoStoragePaths
 {
-    public const string PdfExtension = ".pdf";
+    private const string PdfExtension = ".pdf";
     private const int MaxFileNameLength = 180;
 
     // Se aplican también en Linux para que el nombre de descarga sea portable.

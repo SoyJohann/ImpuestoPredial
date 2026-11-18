@@ -5,7 +5,9 @@
 @using Coactivos_Predial.Shared.Services.SPropietarios;
 @using Coactivos_Predial.Shared.Services.Document
 @using Coactivos_Predial.Shared.Services.Document.Enums
+@using Coactivos_Predial.Shared.Services.Document.Interfaces
 @using Coactivos_Predial.Shared.Services.SPredios
+@using Coactivos_Predial.Shared.Services.SDocumentos
 
 @rendermode InteractiveServer
 @inject IJSRuntime JSRuntime
@@ -14,6 +16,7 @@
 @inject ITiposDocumentoService tiposDocumentoService
 @inject ITenantProvider Tenant
 @inject IPrediosService prediosService
+@inject Coactivos_Predial.Shared.Services.SDocumentos.SDocumentosService sDocumentosService
 @inject IpropietariosService propietariosService
 
 <PageTitle>Consulta de predio</PageTitle>
@@ -75,233 +78,180 @@ else if (!busquedaRealizada)
 
 @if (busquedaRealizada && Predio is { } predio)
 {
-    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-        <!-- Columna izquierda: datos del predio y propietarios -->
-        <div class="space-y-4">
-            <UiPanel Title="Predio">
-                <dl class="divide-y divide-line">
-                    <div class="flex h-7 items-center justify-between gap-4">
+    <div class="mt-4 grid grid-cols-1 items-start gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+        
+        <!-- COLUMNA IZQUIERDA (Sticky): Ficha Catastral, Propietarios y Coactivo -->
+        <div class="space-y-4 lg:sticky lg:top-4">
+            
+            <!-- 1. Ficha del Predio -->
+            <UiPanel Title="Ficha del Predio">
+                <div class="mb-3 flex items-center justify-between rounded-ui border border-line bg-paper px-3 py-2">
+                    <div>
+                        <span class="block text-[11px] font-medium uppercase tracking-wider text-ink-500">Avalúo Catastral</span>
+                        <span class="font-numeric text-base font-bold text-ink-900">@ptotalconrecFormated</span>
+                    </div>
+                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium @(predio.Exento == true ? "bg-warn-600/10 text-warn-600" : "bg-ok-600/10 text-ok-600")">
+                        @(string.IsNullOrWhiteSpace(nentidad) ? "Sin dato" : nentidad)
+                    </span>
+                </div>
+
+                <dl class="divide-y divide-line text-sm">
+                    <div class="flex items-center justify-between gap-2 py-1.5">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Propietario</dt>
-                        <dd class="truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(predio.PropietarioNombre) ? "Sin dato" : predio.PropietarioNombre)</dd>
+                        <dd class="truncate text-right font-medium text-ink-900" title="@predio.PropietarioNombre">
+                            @(string.IsNullOrWhiteSpace(predio.PropietarioNombre) ? "Sin dato" : predio.PropietarioNombre)
+                        </dd>
                     </div>
-                    <div class="flex h-7 items-center justify-between gap-4">
+                    <div class="flex items-center justify-between gap-2 py-1.5">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Cédula / NIT</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(predio.PropietarioDocumento) ? "—" : predio.PropietarioDocumento)</dd>
+                        <dd class="font-numeric truncate text-right text-ink-900">
+                            @(string.IsNullOrWhiteSpace(predio.PropietarioDocumento) ? "—" : predio.PropietarioDocumento)
+                        </dd>
                     </div>
-                    <div class="flex h-7 items-center justify-between gap-4">
+                    <div class="flex items-center justify-between gap-2 py-1.5">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Matrícula</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(string.IsNullOrWhiteSpace(predio.Matricula) ? "—" : predio.Matricula)</dd>
+                        <dd class="font-numeric truncate text-right text-ink-900">
+                            @(string.IsNullOrWhiteSpace(predio.Matricula) ? "—" : predio.Matricula)
+                        </dd>
                     </div>
-                    <div class="flex h-7 items-center justify-between gap-4">
+                    <div class="flex items-center justify-between gap-2 py-1.5">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Dirección</dt>
-                        <dd class="truncate text-right text-sm text-ink-900" title="@predio.Direccion">@(string.IsNullOrWhiteSpace(predio.Direccion) ? "—" : predio.Direccion)</dd>
+                        <dd class="truncate text-right text-ink-900" title="@predio.Direccion">
+                            @(string.IsNullOrWhiteSpace(predio.Direccion) ? "—" : predio.Direccion)
+                        </dd>
                     </div>
-                    <div class="flex h-7 items-center justify-between gap-4">
-                        <dt class="shrink-0 text-xs font-medium text-ink-500">Área terreno</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(predio.AreaTerreno?.ToString("N0") ?? "—")</dd>
+                    <div class="grid grid-cols-2 gap-2 pt-2">
+                        <div class="rounded-ui bg-paper px-2.5 py-1.5">
+                            <span class="block text-[11px] text-ink-500">Área terreno</span>
+                            <span class="font-numeric text-xs font-semibold text-ink-900">@(predio.AreaTerreno?.ToString("N0") ?? "—") m²</span>
+                        </div>
+                        <div class="rounded-ui bg-paper px-2.5 py-1.5">
+                            <span class="block text-[11px] text-ink-500">Área construida</span>
+                            <span class="font-numeric text-xs font-semibold text-ink-900">@(predio.AreaConstruida?.ToString("N0") ?? "—") m²</span>
+                        </div>
                     </div>
-                    <div class="flex h-7 items-center justify-between gap-4">
-                        <dt class="shrink-0 text-xs font-medium text-ink-500">Área construida</dt>
-                        <dd class="font-numeric truncate text-right text-sm text-ink-900">@(predio.AreaConstruida?.ToString("N0") ?? "—")</dd>
-                    </div>
-                    <div class="flex h-7 items-center justify-between gap-4">
+                    <div class="flex items-center justify-between gap-2 pt-2">
                         <dt class="shrink-0 text-xs font-medium text-ink-500">Zona / Estrato</dt>
-                        <dd class="truncate text-right text-sm text-ink-900">
+                        <dd class="truncate text-right text-xs text-ink-900">
                             @(string.IsNullOrWhiteSpace(predio.Zona) ? "—" : predio.Zona)
                             @if (!string.IsNullOrWhiteSpace(predio.Estrato))
                             {
-                                <span class="text-ink-500"> / @predio.Estrato</span>
+                                <span class="text-ink-500"> / Estrato @predio.Estrato</span>
                             }
                         </dd>
-                    </div>
-                    <div class="flex h-7 items-center justify-between gap-4">
-                        <dt class="shrink-0 text-xs font-medium text-ink-500">Condición</dt>
-                        <dd class="truncate text-right text-sm font-medium @(predio.Exento == true ? "text-warn-600" : "text-ok-600")">@(string.IsNullOrWhiteSpace(nentidad) ? "Sin dato" : nentidad)</dd>
-                    </div>
-                    <div class="flex h-7 items-center justify-between gap-4">
-                        <dt class="shrink-0 text-xs font-medium text-ink-500">Avalúo</dt>
-                        <dd class="font-numeric truncate text-right text-sm font-medium text-ink-900">@ptotalconrecFormated</dd>
                     </div>
                 </dl>
             </UiPanel>
 
+            <!-- 2. Propietarios (Compacto) -->
             <UiPanel Title="Propietarios" Subtitle="@PropietariosResumen" BodyClass="p-0">
                 @if (isLoading)
                 {
-                    <div class="px-4">
-                        <UiLoading Text="Cargando propietarios…" />
-                    </div>
+                    <div class="p-4"><UiLoading Text="Cargando propietarios…" /></div>
                 }
                 else if (PropietarioDto is null || !PropietarioDto.Any())
                 {
-                    <UiEmpty Icon="users"
-                             Title="Sin propietarios registrados"
-                             Message="No se encontraron propietarios asociados a este predio." />
+                    <div class="px-4 py-5 text-center text-xs text-ink-500">
+                        Sin propietarios adicionales registrados.
+                    </div>
                 }
                 else
                 {
-                    <UiTable Class="min-w-[690px] max-h-[calc(100vh-430px)] min-h-[160px] overscroll-contain">
-                        <Header>
-                            <tr>
-                                <th>Documento</th>
-                                <th>Nombre</th>
-                                <th>Tipo</th>
-                            </tr>
-                        </Header>
-                        <ChildContent>
-                            @foreach (var prop in PropietarioDto)
-                            {
-                                <tr>
-                                    <td class="font-numeric">@prop.Documento</td>
-                                    <td>@(string.IsNullOrWhiteSpace(prop.Nombre) ? "—" : prop.Nombre)</td>
-                                    <td>@prop.TipoId</td>
-                                </tr>
-                            }
-                        </ChildContent>
-                    </UiTable>
+                    <div class="max-h-48 divide-y divide-line overflow-y-auto">
+                        @foreach (var prop in PropietarioDto)
+                        {
+                            <div class="flex items-center justify-between gap-2 px-4 py-2 text-xs">
+                                <div class="min-w-0">
+                                    <p class="truncate font-medium text-ink-900">@(string.IsNullOrWhiteSpace(prop.Nombre) ? "—" : prop.Nombre)</p>
+                                    <p class="font-numeric text-ink-500">@prop.TipoId: @prop.Documento</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </UiPanel>
+
+            <!-- 3. Coactivo y Procesos (Compacto) -->
+            <UiPanel Title="Coactivo y procesos" Subtitle="@(string.IsNullOrWhiteSpace(nestado_proc) ? "Sin proceso" : nestado_proc)" BodyClass="p-0">
+                @if (isLoading)
+                {
+                    <div class="p-4"><UiLoading Text="Cargando procesos…" /></div>
+                }
+                else if (ProcesosDto is null || !ProcesosDto.Any())
+                {
+                    <div class="px-4 py-5 text-center text-xs text-ink-500">
+                        Este predio no registra procesos de cobro coactivo.
+                    </div>
+                }
+                else
+                {
+                    <div class="max-h-48 divide-y divide-line overflow-y-auto">
+                        @foreach (var proc in ProcesosDto)
+                        {
+                            <div class="flex items-center justify-between gap-2 px-4 py-2.5 text-xs">
+                                <div>
+                                    <p class="font-numeric font-medium text-ink-900">Res. @(string.IsNullOrWhiteSpace(proc.Resolucion) ? "—" : proc.Resolucion)</p>
+                                    <p class="font-numeric text-ink-500">@FechaTexto(proc.FechaMandamiento)</p>
+                                </div>
+                                <UiBadge Variant="neutral">@proc.NombreEstado</UiBadge>
+                            </div>
+                        }
+                    </div>
                 }
             </UiPanel>
         </div>
 
-        <!-- Columna derecha: documentos -->
-        <UiPanel Title="Documentos" Subtitle="@DocumentosResumen" BodyClass="p-0">
-            <Actions>
-                <UiButton Variant="ghost" Size="sm" OnClick="ActualizarDocumentos" Title="Actualizar" AriaLabel="Actualizar documentos">
-                    <UiIcon Name="refresh" />
-                </UiButton>
-                <UiButton Variant="primary" Size="sm" OnClick="@(() => AbrirModalSubir())">
-                    <UiIcon Name="upload" />
-                    Subir PDF
-                </UiButton>
-            </Actions>
-
-            <ChildContent>
-                @if (carpetaSeleccionada is null)
-                {
-                    <UiDocumentFolders Documentos="DocumentosDto"
-                                       Tipos="TiposDocumento"
-                                       OnOpen="AbrirCarpeta" />
-                }
-                else
-                {
-                    <div class="flex items-center justify-between gap-3 border-b border-line px-3 py-2">
-                        <UiButton Variant="ghost" Size="sm" OnClick="CerrarCarpeta">
-                            <UiIcon Name="chevron-left" />
-                            Todas las carpetas
-                        </UiButton>
-                        <span class="text-xs text-ink-500">@NombreCarpeta(carpetaSeleccionada.Value)</span>
-                    </div>
-
-                    @if (!DocumentosFiltrados.Any())
-                    {
-                        <UiEmpty Icon="folder-open"
-                                 Title="Esta carpeta no tiene documentos"
-                                 Message="Cargue un PDF en esta carpeta.">
-                            <Action>
-                                <UiButton Variant="secondary" Size="sm" OnClick="@(() => AbrirModalSubir(carpetaSeleccionada))">
-                                    <UiIcon Name="upload" />
-                                    Subir PDF
-                                </UiButton>
-                            </Action>
-                        </UiEmpty>
-                    }
-                    else
-                    {
-                        <div class="border-b border-line px-3 py-2">
-                            <input type="search" @bind="filtroDocumentos" @bind:event="oninput" placeholder="Filtrar documentos…" aria-label="Filtrar documentos"
-                                   class="h-8 w-full rounded-ui border border-line bg-surface px-3 text-sm text-ink-900 outline-none focus:border-accent-700 sm:max-w-xs" />
-                        </div>
-                        <UiTable Class="max-h-[calc(100vh-380px)] min-h-[160px] overscroll-contain">
-                            <Header>
-                                <tr>
-                                    <th>Documento</th>
-                                    <th>Fecha</th>
-                                    <th class="text-right">Acciones</th>
-                                </tr>
-                            </Header>
-                            <ChildContent>
-                                @foreach (var doc in DocumentosFiltrados)
-                                {
-                                    <tr>
-                                        <td>
-                                            <p class="font-medium text-ink-900">@doc.Nombre</p>
-                                            <p class="font-numeric max-w-[320px] truncate text-xs text-ink-500">@(doc.NombreArchivo ?? doc.Ruta)</p>
-                                        </td>
-                                        <td class="font-numeric">@FechaTexto(doc.Fecha)</td>
-                                        <td class="actions">
-                                            <div class="flex items-center justify-end gap-1">
-                                                <UiButton Variant="ghost" Size="sm" OnClick="@((e) => AbrirPdf(doc.Id))">
-                                                    <UiIcon Name="file-text" />
-                                                    Ver
-                                                </UiButton>
-                                                <a class="ui-btn inline-flex h-8 items-center gap-1.5 rounded-ui border border-line px-2.5 text-xs font-medium text-ink-700 hover:bg-paper" href="/api/documentos/@doc.Id/descargar">
-                                                    <UiIcon Name="download" /> Descargar
-                                                </a>
-                                                <AuthorizeView Roles="2">
-                                                    <Authorized>
-                                                        <UiButton Variant="danger" Size="sm" OnClick="@((e) => PermisoEliminar(doc))">
-                                                            <UiIcon Name="trash" />
-                                                            Eliminar
-                                                        </UiButton>
-                                                    </Authorized>
-                                                </AuthorizeView>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </ChildContent>
-                        </UiTable>
-                    }
-                }
-            </ChildContent>
-        </UiPanel>
-    </div>
-
-    <!-- Procesos de cobro coactivo -->
-    <div class="mt-4">
-        <UiPanel Title="Coactivo y procesos" Subtitle="@(string.IsNullOrWhiteSpace(nestado_proc) ? "Sin proceso registrado" : nestado_proc)" BodyClass="p-0">
-            <ChildContent>
-                @if (isLoading)
-                {
-                    <div class="px-4">
-                        <UiLoading Text="Cargando procesos…" />
-                    </div>
-                }
-                else if (ProcesosDto is null || !ProcesosDto.Any())
-                {
-                    <UiEmpty Icon="archive"
-                             Title="Sin procesos de cobro coactivo"
-                             Message="Este predio no tiene mandamientos ni procesos registrados." />
-                }
-                else
-                {
-                    <UiTable>
-                        <Header>
-                            <tr>
-                                <th>Resolución</th>
-                                <th>Fecha mandamiento</th>
-                                <th>Estado</th>
-                            </tr>
-                        </Header>
-                        <ChildContent>
-                            @foreach (var proc in ProcesosDto)
-                            {
-                                <tr>
-                                    <td class="font-numeric">@(string.IsNullOrWhiteSpace(proc.Resolucion) ? "—" : proc.Resolucion)</td>
-                                    <td class="font-numeric">@FechaTexto(proc.FechaMandamiento)</td>
-                                    <td><UiBadge Variant="neutral">@proc.NombreEstado</UiBadge></td>
-                                </tr>
-                            }
-                        </ChildContent>
-                    </UiTable>
-                }
-            </ChildContent>
-        </UiPanel>
+        <!-- COLUMNA DERECHA: Explorador de Archivos en Grid -->
+        <div class="min-w-0">
+            <UiDocumentExplorer Documentos="DocumentosDto"
+                                Tipos="TiposDocumento"
+                                CarpetaSeleccionadaId="carpetaSeleccionada"
+                                OnOpenCarpeta="AbrirCarpeta"
+                                OnCerrarCarpeta="CerrarCarpeta"
+                                OnVer="AbrirPdf"
+                                OnDescargar="DescargarPdf"
+                                OnCambiarTipo="async doc => await CambiarTipoIndividual(doc)"
+                                OnCambiarTipoLote="CambiarTipoLote"
+                                OnEliminar="PermisoEliminar"
+                                OnSubir="tipoId => AbrirModalSubir(tipoId)"
+                                OnDescargarCarpeta="DescargarCarpeta"
+                                OnActualizar="ActualizarDocumentos" />
+        </div>
     </div>
 }
 
 <!-- Visor de PDF (fuera del bloque del predio para que siempre exista) -->
 <PdfViewerModal @ref="pdfViewerModal" />
+
+<!-- Modal para cambiar tipo de documento -->
+<UiDialog Open="@mostrarModalCambiarTipo"
+          OnClose="CancelarCambiarTipo"
+          Title="Cambiar tipo documental"
+          Subtitle="@(documentoParaCambiar is null ? "" : documentoParaCambiar.Nombre)"
+          Size="sm">
+    <ChildContent>
+        <div class="space-y-3">
+            <UiField Label="Nuevo tipo de documento" For="cambiar-tipo">
+                <UiSelect Id="cambiar-tipo" @bind-Value="tipoSeleccionadoParaCambiar">
+                    @foreach (var tipo in TiposDocumento)
+                    {
+                        <option value="@tipo.Id">@tipo.Nombre</option>
+                    }
+                </UiSelect>
+            </UiField>
+            <p class="text-xs text-ink-500">
+                El documento se moverá a la carpeta seleccionada. El archivo físico no se modificará.
+            </p>
+        </div>
+    </ChildContent>
+    <Footer>
+        <UiButton Variant="secondary" OnClick="CancelarCambiarTipo">Cancelar</UiButton>
+        <UiButton Variant="primary" OnClick="ConfirmarCambiarTipo">
+            <UiIcon Name="swap-horizontal" />
+            Cambiar tipo
+        </UiButton>
+    </Footer>
+</UiDialog>
 
 <!-- Búsqueda por cédula -->
 <UiDialog Open="@mostrarModalBusqueda"

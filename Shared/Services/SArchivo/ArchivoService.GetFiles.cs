@@ -2,7 +2,7 @@ using Coactivos_Predial.Shared.Services.Common;
 using Coactivos_Predial.Shared.Services.Document.Enums;
 using Coactivos_Predial.Shared.Services.FileHandler.Responses;
 
-namespace Coactivos_Predial.Shared.Services.FileHandler;
+namespace Coactivos_Predial.Shared.Services.SArchivo;
 
 public partial class ArchivoService
 {

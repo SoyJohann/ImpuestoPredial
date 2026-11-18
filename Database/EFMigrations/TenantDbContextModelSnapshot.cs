@@ -156,6 +156,34 @@ namespace Coactivos_Predial.Database.EFMigrations
                     b.ToTable("Contribuyentes");
                 });
 
+            modelBuilder.Entity("Coactivos_Predial.Shared.Models.DocumentoTipoHistorial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DocumentoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("TipoAnteriorId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TipoNuevoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DocumentoTipoHistorial");
+                });
+
             modelBuilder.Entity("Coactivos_Predial.Shared.Models.Documentos", b =>
                 {
                     b.Property<int>("Id")
@@ -228,13 +256,13 @@ namespace Coactivos_Predial.Database.EFMigrations
                         .HasColumnType("text")
                         .HasColumnName("Ruta");
 
+                    b.Property<long?>("Size")
+                        .HasColumnType("bigint")
+                        .HasColumnName("Size");
+
                     b.Property<string>("StorageKey")
                         .HasColumnType("text")
                         .HasColumnName("StorageKey");
-
-                    b.Property<long?>("Tamano")
-                        .HasColumnType("bigint")
-                        .HasColumnName("Tamano");
 
                     b.Property<int>("TipoDocumentoId")
                         .HasColumnType("integer")

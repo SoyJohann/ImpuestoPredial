@@ -1,0 +1,431 @@
+@using Coactivos_Predial.Shared.Components
+@using Coactivos_Predial.Shared.Models
+@using Coactivos_Predial.Shared.Services.Document
+@using Coactivos_Predial.Shared.Services.Document.Interfaces
+@using Coactivos_Predial.Shared.Services.SPDios.Responses
+
+<!-- Contenedor principal tipo Explorador -->
+<div class="relative flex min-h-[560px] flex-col rounded-ui border border-line bg-surface shadow-sm"
+     @onclick="CerrarMenuContextual"
+     @oncontextmenu="@(e => AbrirMenuFondo(e))"
+     @oncontextmenu:preventDefault>
+
+    <!-- Barra Superior del Explorador (Breadcrumb + Filtro + Acciones) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-paper/60 px-4 py-3">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-1.5 text-sm" aria-label="Ruta de carpeta">
+            <button type="button"
+                    @onclick="CerrarCarpeta"
+                    class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-medium transition @(CarpetaSeleccionadaId is null ? "bg-surface text-ink-900 shadow-xs" : "text-ink-500 hover:bg-surface hover:text-ink-900")">
+                <UiIcon Name="folder" />
+                <span>Expediente</span>
+            </button>
+
+            @if (CarpetaActual is not null)
+            {
+                <span class="text-ink-400">/</span>
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-accent-700/10 px-2.5 py-1 font-semibold text-accent-700">
+                    @CarpetaActual.Nombre
+                </span>
+            }
+        </nav>
+
+        <!-- Controles derechos -->
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Buscador rápido -->
+            <div class="relative">
+                <input type="search"
+                       @bind="busquedaLocal"
+                       @bind:event="oninput"
+                       placeholder="@(CarpetaSeleccionadaId is null ? "Filtrar carpetas…" : "Filtrar archivos…")"
+                       class="h-8 w-44 rounded-ui border border-line bg-surface px-3 text-xs text-ink-900 outline-none focus:border-accent-700 sm:w-56" />
+            </div>
+
+            <!-- Toggle Grid / Lista -->
+            <div class="inline-flex rounded-ui border border-line bg-surface p-0.5">
+                <button type="button"
+                        @onclick="@(() => vistaGrid = true)"
+                        title="Vista cuadrícula"
+                        class="rounded px-2 py-1 text-xs font-medium @(vistaGrid ? "bg-paper text-ink-900 shadow-2xs" : "text-ink-500 hover:text-ink-900")">
+                    Grid
+                </button>
+                <button type="button"
+                        @onclick="@(() => vistaGrid = false)"
+                        title="Vista lista"
+                        class="rounded px-2 py-1 text-xs font-medium @(!vistaGrid ? "bg-paper text-ink-900 shadow-2xs" : "text-ink-500 hover:text-ink-900")">
+                    Lista
+                </button>
+            </div>
+
+            <UiButton Variant="ghost" Size="sm" OnClick="OnActualizar" Title="Actualizar">
+                <UiIcon Name="refresh" />
+            </UiButton>
+
+            <UiButton Variant="primary" Size="sm" OnClick="@(() => OnSubir.InvokeAsync(CarpetaSeleccionadaId))">
+                <UiIcon Name="upload" />
+                Subir PDF
+            </UiButton>
+        </div>
+    </div>
+
+    <!-- Barra de acciones cuando hay archivos seleccionados -->
+    @if (seleccionados.Any() && CarpetaSeleccionadaId is not null)
+    {
+        <div class="flex items-center justify-between border-b border-accent-700/20 bg-accent-700/5 px-4 py-2 text-xs">
+            <span class="font-medium text-accent-700">
+                @seleccionados.Count @(seleccionados.Count == 1 ? "documento seleccionado" : "documentos seleccionados")
+            </span>
+            <div class="flex items-center gap-2">
+                <UiButton Variant="secondary" Size="sm" OnClick="OnCambiarTipoLote">
+                    <UiIcon Name="swap-horizontal" />
+                    Cambiar tipo
+                </UiButton>
+                <button type="button" @onclick="() => seleccionados.Clear()" class="px-2 py-1 text-ink-500 hover:text-ink-900">
+                    Deseleccionar
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- ÁREA DE CONTENIDO (NIVEL 1: CARPETAS | NIVEL 2: ARCHIVOS) -->
+    <div class="flex-1 p-4">
+        @if (CarpetaSeleccionadaId is null)
+        {
+            <!-- ================= NIVEL 1: GRID DE CARPETAS ================= -->
+            <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                @foreach (var carpeta in CarpetasFiltradas)
+                {
+                    var docsCarpeta = Documentos?.Where(d => d.TipoDocumentoId == carpeta.Id).ToList() ?? new();
+                    var cantidad = docsCarpeta.Count;
+                    var ultimaFecha = docsCarpeta.OrderByDescending(d => d.Fecha).FirstOrDefault()?.Fecha;
+                    var tieneDocs = cantidad > 0;
+
+                    <div @onclick="@(() => EntrarACarpeta(carpeta.Id))"
+                         @oncontextmenu="@(e => AbrirMenuCarpeta(e, carpeta))"
+                         @oncontextmenu:preventDefault
+                         @oncontextmenu:stopPropagation
+                         class="group relative flex cursor-pointer select-none flex-col justify-between rounded-ui border border-line bg-surface p-4 transition hover:border-accent-700/50 hover:bg-paper/50 hover:shadow-sm">
+                        
+                        <div class="flex items-start justify-between">
+                            <!-- Ícono carpeta -->
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg @(tieneDocs ? "bg-accent-700/10 text-accent-700" : "bg-paper text-ink-400") transition group-hover:scale-105">
+                                <UiIcon Name="folder" />
+                            </div>
+
+                            <!-- Contador -->
+                            <span class="font-numeric inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold @(tieneDocs ? "bg-accent-700/10 text-accent-700" : "bg-paper text-ink-500")">
+                                @cantidad
+                            </span>
+                        </div>
+
+                        <div class="mt-4">
+                            <h3 class="truncate text-sm font-semibold text-ink-900 group-hover:text-accent-700" title="@carpeta.Nombre">
+                                @carpeta.Nombre
+                            </h3>
+                            <p class="mt-0.5 text-xs text-ink-500">
+                                @(ultimaFecha.HasValue ? $"Última carga {ultimaFecha.Value:dd/MM/yyyy}" : "Sin documentos")
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- ================= NIVEL 2: INTERIOR DE CARPETA ================= -->
+            @if (!ArchivosFiltrados.Any())
+            {
+                <div class="flex h-full min-h-[360px] flex-col items-center justify-center text-center">
+                    <UiEmpty Icon="folder-open"
+                             Title="Esta carpeta no tiene documentos"
+                             Message="Haga clic derecho o use el botón superior para cargar un PDF.">
+                        <Action>
+                            <UiButton Variant="secondary" Size="sm" OnClick="@(() => OnSubir.InvokeAsync(CarpetaSeleccionadaId))">
+                                <UiIcon Name="upload" />
+                                Subir PDF aquí
+                            </UiButton>
+                        </Action>
+                    </UiEmpty>
+                </div>
+            }
+            else if (vistaGrid)
+            {
+                <!-- GRID DE ARCHIVOS PDF -->
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                    @foreach (var doc in ArchivosFiltrados)
+                    {
+                        var isSelected = seleccionados.Contains(doc.Id);
+
+                        <div @onclick="@(() => ToggleSeleccion(doc.Id))"
+                             @ondblclick="@(() => OnVer.InvokeAsync(doc.Id))"
+                             @oncontextmenu="@(e => AbrirMenuArchivo(e, doc))"
+                             @oncontextmenu:preventDefault
+                             @oncontextmenu:stopPropagation
+                             class="group relative flex cursor-pointer select-none flex-col overflow-hidden rounded-ui border transition @(isSelected ? "border-accent-700 bg-accent-700/5 ring-1 ring-accent-700" : "border-line bg-surface hover:border-accent-700/50 hover:shadow-sm")">
+
+                            <!-- Checkbox flotante -->
+                            <div class="absolute left-2.5 top-2.5 z-10" @onclick:stopPropagation>
+                                <input type="checkbox"
+                                       checked="@isSelected"
+                                       @onchange="@(() => ToggleSeleccion(doc.Id))"
+                                       class="h-4 w-4 rounded border-line text-accent-700 focus:ring-accent-700" />
+                            </div>
+
+                            <!-- Badge PDF -->
+                            <span class="absolute right-2.5 top-2.5 z-10 rounded bg-danger-600/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-danger-600">
+                                PDF
+                            </span>
+
+                            <!-- Miniatura visual estilo hoja -->
+                            <div class="flex h-28 items-center justify-center border-b border-line bg-paper/70 p-4 transition group-hover:bg-paper">
+                                <div class="flex h-20 w-16 flex-col justify-between rounded border border-line bg-surface p-2 shadow-2xs transition group-hover:scale-105">
+                                    <div class="space-y-1">
+                                        <div class="h-1.5 w-8 rounded bg-danger-600/60"></div>
+                                        <div class="h-1 w-full rounded bg-ink-200"></div>
+                                        <div class="h-1 w-10 rounded bg-ink-200"></div>
+                                        <div class="h-1 w-full rounded bg-ink-200"></div>
+                                    </div>
+                                    <span class="text-[8px] font-bold text-ink-400">SGD</span>
+                                </div>
+                            </div>
+
+                            <!-- Metadatos del archivo -->
+                            <div class="flex flex-1 flex-col justify-between p-3">
+                                <div>
+                                    <p class="line-clamp-2 text-xs font-semibold text-ink-900" title="@doc.Nombre">
+                                        @doc.Nombre
+                                    </p>
+                                    <p class="font-numeric mt-1 truncate text-[11px] text-ink-500" title="@(doc.NombreArchivo ?? doc.Ruta)">
+                                        @(doc.NombreArchivo ?? doc.Ruta)
+                                    </p>
+                                </div>
+                                <div class="mt-2.5 flex items-center justify-between border-t border-line/60 pt-2 text-[11px] text-ink-500">
+                                    <span class="font-numeric">@doc.Fecha?.ToString("dd/MM/yyyy")</span>
+                                    <span class="font-medium text-accent-700 opacity-0 transition group-hover:opacity-100">Abrir →</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- VISTA LISTA ALTERNATIVA -->
+                <UiTable>
+                    <Header>
+                        <tr>
+                            <th class="w-8"></th>
+                            <th>Documento</th>
+                            <th>Fecha</th>
+                            <th class="text-right">Acciones</th>
+                        </tr>
+                    </Header>
+                    <ChildContent>
+                        @foreach (var doc in ArchivosFiltrados)
+                        {
+                            <tr @oncontextmenu="@(e => AbrirMenuArchivo(e, doc))"
+                                @oncontextmenu:preventDefault
+                                @oncontextmenu:stopPropagation>
+                                <td>
+                                    <input type="checkbox" checked="@seleccionados.Contains(doc.Id)" @onchange="@(() => ToggleSeleccion(doc.Id))" />
+                                </td>
+                                <td>
+                                    <p class="font-medium text-ink-900">@doc.Nombre</p>
+                                    <p class="font-numeric text-xs text-ink-500">@(doc.NombreArchivo ?? doc.Ruta)</p>
+                                </td>
+                                <td class="font-numeric">@doc.Fecha?.ToString("dd/MM/yyyy")</td>
+                                <td class="text-right">
+                                    <UiButton Variant="ghost" Size="sm" OnClick="@(() => OnVer.InvokeAsync(doc.Id))">Ver</UiButton>
+                                </td>
+                            </tr>
+                        }
+                    </ChildContent>
+                </UiTable>
+            }
+        }
+    </div>
+</div>
+
+<!-- ================= MENÚ CONTEXTUAL FLOTANTE (CLIC DERECHO) ================= -->
+@if (menuVisible)
+{
+    <div class="fixed inset-0 z-40" @onclick="CerrarMenuContextual" @oncontextmenu="CerrarMenuContextual" @oncontextmenu:preventDefault></div>
+
+    <div style="left: @(menuX)px; top: @(menuY)px;"
+         class="fixed z-50 w-56 rounded-ui border border-line bg-surface py-1.5 text-xs shadow-lg">
+
+        @if (archivoContexto is not null)
+        {
+            <div class="border-b border-line px-3 py-1.5">
+                <p class="truncate font-semibold text-ink-900">@archivoContexto.Nombre</p>
+            </div>
+            <button type="button" @onclick="@(() => EjecutarAccion(() => OnVer.InvokeAsync(archivoContexto.Id)))"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-paper">
+                <UiIcon Name="file-text" /> Ver documento
+            </button>
+            <a href="/api/documentos/@archivoContexto.Id/descargar" @onclick="CerrarMenuContextual"
+               class="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-paper">
+                <UiIcon Name="download" /> Descargar PDF
+            </a>
+            <button type="button" @onclick="@(() => EjecutarAccion(() => OnCambiarTipo.InvokeAsync(archivoContexto)))"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-paper">
+                <UiIcon Name="swap-horizontal" /> Cambiar tipo / carpeta
+            </button>
+            <AuthorizeView Roles="2">
+                <Authorized>
+                    <div class="my-1 border-t border-line"></div>
+                    <button type="button" @onclick="@(() => EjecutarAccion(() => OnEliminar.InvokeAsync(archivoContexto)))"
+                            class="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-danger-600 hover:bg-danger-600/5">
+                        <UiIcon Name="trash" /> Eliminar documento
+                    </button>
+                </Authorized>
+            </AuthorizeView>
+        }
+        else if (carpetaContexto is not null)
+        {
+            <div class="border-b border-line px-3 py-1.5">
+                <p class="truncate font-semibold text-ink-900">@carpetaContexto.Nombre</p>
+            </div>
+            <button type="button" @onclick="@(() => EjecutarAccion(() => EntrarACarpeta(carpetaContexto.Id)))"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-paper">
+                <UiIcon Name="folder-open" /> Abrir carpeta
+            </button>
+            <button type="button" @onclick="@(() => EjecutarAccion(() => OnSubir.InvokeAsync(carpetaContexto.Id)))"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-paper">
+                <UiIcon Name="upload" /> Subir PDF aquí
+            </button>
+            <button type="button" @onclick="@(() => EjecutarAccion(() => OnDescargarCarpeta.InvokeAsync(carpetaContexto.Id)))"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-paper">
+                <UiIcon Name="download" /> Descargar carpeta (.zip)
+            </button>
+        }
+        else
+        {
+            <button type="button" @onclick="@(() => EjecutarAccion(() => OnSubir.InvokeAsync(CarpetaSeleccionadaId)))"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-paper">
+                <UiIcon Name="upload" /> Subir nuevo PDF
+            </button>
+            <button type="button" @onclick="@(() => EjecutarAccion(() => OnActualizar.InvokeAsync()))"
+                    class="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-paper">
+                <UiIcon Name="refresh" /> Actualizar vista
+            </button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IEnumerable<DocumentoDto>? Documentos { get; set; }
+    [Parameter] public IEnumerable<TipoDocumentoDto> Tipos { get; set; } = Enumerable.Empty<TipoDocumentoDto>();
+    [Parameter] public int? CarpetaSeleccionadaId { get; set; }
+
+    [Parameter] public EventCallback<int> OnOpenCarpeta { get; set; }
+    [Parameter] public EventCallback OnCerrarCarpeta { get; set; }
+    [Parameter] public EventCallback<int> OnVer { get; set; }
+    [Parameter] public EventCallback<int> OnDescargar { get; set; }
+    [Parameter] public EventCallback<DocumentoDto> OnCambiarTipo { get; set; }
+    [Parameter] public EventCallback OnCambiarTipoLote { get; set; }
+    [Parameter] public EventCallback<DocumentoDto> OnEliminar { get; set; }
+    [Parameter] public EventCallback<int?> OnSubir { get; set; }
+    [Parameter] public EventCallback<int> OnDescargarCarpeta { get; set; }
+    [Parameter] public EventCallback OnActualizar { get; set; }
+
+    private string busquedaLocal = string.Empty;
+    private bool vistaGrid = true;
+    private HashSet<int> seleccionados = new();
+
+    // Estado del menú contextual
+    private bool menuVisible;
+    private double menuX;
+    private double menuY;
+    private DocumentoDto? archivoContexto;
+    private TipoDocumentoDto? carpetaContexto;
+
+    private TipoDocumentoDto? CarpetaActual => Tipos.FirstOrDefault(t => t.Id == CarpetaSeleccionadaId);
+
+    private IEnumerable<TipoDocumentoDto> CarpetasFiltradas =>
+        string.IsNullOrWhiteSpace(busquedaLocal)
+            ? Tipos
+            : Tipos.Where(t => t.Nombre.Contains(busquedaLocal, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<DocumentoDto> ArchivosFiltrados
+    {
+        get
+        {
+            var query = Documentos?.Where(d => d.TipoDocumentoId == CarpetaSeleccionadaId) ?? Enumerable.Empty<DocumentoDto>();
+            if (!string.IsNullOrWhiteSpace(busquedaLocal))
+            {
+                query = query.Where(d =>
+                    (d.Nombre?.Contains(busquedaLocal, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (d.NombreArchivo?.Contains(busquedaLocal, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+            return query;
+        }
+    }
+
+    private async Task EntrarACarpeta(int id)
+    {
+        busquedaLocal = string.Empty;
+        seleccionados.Clear();
+        await OnOpenCarpeta.InvokeAsync(id);
+    }
+
+    private async Task CerrarCarpeta()
+    {
+        busquedaLocal = string.Empty;
+        seleccionados.Clear();
+        await OnCerrarCarpeta.InvokeAsync();
+    }
+
+    private void ToggleSeleccion(int docId)
+    {
+        if (!seleccionados.Add(docId))
+            seleccionados.Remove(docId);
+    }
+
+    private void AbrirMenuArchivo(MouseEventArgs e, DocumentoDto doc)
+    {
+        archivoContexto = doc;
+        carpetaContexto = null;
+        PosicionarMenu(e);
+    }
+
+    private void AbrirMenuCarpeta(MouseEventArgs e, TipoDocumentoDto carpeta)
+    {
+        carpetaContexto = carpeta;
+        archivoContexto = null;
+        PosicionarMenu(e);
+    }
+
+    private void AbrirMenuFondo(MouseEventArgs e)
+    {
+        archivoContexto = null;
+        carpetaContexto = null;
+        PosicionarMenu(e);
+    }
+
+    private void PosicionarMenu(MouseEventArgs e)
+    {
+        // Ajuste simple para evitar que se salga por el borde derecho/inferior
+        menuX = Math.Max(12, e.ClientX);
+        menuY = Math.Max(12, e.ClientY);
+        menuVisible = true;
+    }
+
+    private void CerrarMenuContextual()
+    {
+        menuVisible = false;
+        archivoContexto = null;
+        carpetaContexto = null;
+    }
+
+    private async Task EjecutarAccion(Func<Task> accion)
+    {
+        // Capturar los valores antes de cerrar el menú
+        var archivo = archivoContexto;
+        var carpeta = carpetaContexto;
+        CerrarMenuContextual();
+        archivoContexto = archivo;
+        carpetaContexto = carpeta;
+        await accion();
+    }
+}

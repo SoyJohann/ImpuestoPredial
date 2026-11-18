@@ -175,7 +175,7 @@ internal static class DemoSeeder
                             NombreArchivo = DocumentoStoragePaths.SanitizeFileName(archivo),
                             StorageKey = storageKey,
                             MimeType = "application/pdf",
-                            Tamano = bytes.LongLength,
+                            Size = bytes.LongLength,
                             HashSha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(),
                             Fecha = negocio.InicioActividad
                         });

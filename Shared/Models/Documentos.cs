@@ -38,8 +38,8 @@ public class Documentos : EntityWithTraceability
     public string? MimeType { get; set; }
 
     /// <summary>Tamaño real del archivo en bytes, calculado en el servidor.</summary>
-    [Column("Tamano")]
-    public long? Tamano { get; set; }
+    [Column("Size")]
+    public long? Size { get; set; }
 
     [Column("HashSha256")]
     public string? HashSha256 { get; set; }
