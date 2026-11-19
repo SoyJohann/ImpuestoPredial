@@ -63,7 +63,7 @@ public partial class Consulta
 
     private async Task CargarTiposAsync()
     {
-        TiposDocumento = await tiposDocumentoService.GetActivosAsync(Modulo.Predial);
+        TiposDocumento = await TiposDocumentoService.GetActivosAsync(Modulo.Predial);
         if (string.IsNullOrWhiteSpace(tipoDocumentoSeleccionado) && TiposDocumento.Count > 0)
         {
             tipoDocumentoSeleccionado = TiposDocumento[0].Id.ToString();
@@ -170,7 +170,7 @@ public partial class Consulta
     /// <summary>Busca el predio por código (normalmente el código predial).</summary>
     private async Task CargarPredioAsync(string codigoBusqueda)
     {
-        var respuesta = await prediosService.GetPrediosByCode(codigoBusqueda);
+        var respuesta = await PrediosService.GetPrediosByCode(codigoBusqueda);
         if (respuesta.IsFailure)
         {
             errorBusqueda = respuesta.Error ?? "No fue posible consultar el predio.";
@@ -291,7 +291,7 @@ public partial class Consulta
             Fecha = Documentos.Fecha ?? DateTime.Today
         };
 
-        var resultado = await prediosService.AgregarDocumento(request);
+        var resultado = await PrediosService.AgregarDocumento(request);
         if (resultado.IsFailure)
         {
             errorBusqueda = resultado.Error ?? "No fue posible guardar el documento.";
@@ -394,7 +394,7 @@ public partial class Consulta
 
     private async Task CargarDocumentosAsync(int predioId)
     {
-        var resultado = await prediosService.GetPdfsByCode(predioId);
+        var resultado = await PrediosService.GetPdfsByCode(predioId);
         if (resultado.IsSuccess)
         {
             DocumentosDto = resultado.Value ?? new List<DocumentoDto>();
@@ -411,7 +411,7 @@ public partial class Consulta
 
     private async Task DescargarCarpeta(int carpetaId)
     {
-        await JSRuntime.InvokeVoidAsync("alert", "Descarga de carpeta no implementada aún.");
+        await JsRuntime.InvokeVoidAsync("alert", "Descarga de carpeta no implementada aún.");
     }
 
     private async Task AbrirPdf(int documentId)
@@ -421,7 +421,7 @@ public partial class Consulta
             var links = await DocumentoLinkService.GetLinksAsync(documentId);
             if (links is null)
             {
-                await JSRuntime.InvokeVoidAsync("alert", "No se pudo validar el acceso al documento.");
+                await JsRuntime.InvokeVoidAsync("alert", "No se pudo validar el acceso al documento.");
                 return;
             }
 
@@ -431,12 +431,12 @@ public partial class Consulta
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("alert", "El visor de PDF no está disponible.");
+                await JsRuntime.InvokeVoidAsync("alert", "El visor de PDF no está disponible.");
             }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error al abrir documento: {ex.Message}");
+            await JsRuntime.InvokeVoidAsync("alert", $"Error al abrir documento: {ex.Message}");
         }
     }
 
@@ -452,7 +452,7 @@ public partial class Consulta
     private async Task DescargarPdf(int documentId)
     {
         var url = $"/api/documentos/{documentId}/descargar";
-        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+        await JsRuntime.InvokeVoidAsync("open", url, "_blank");
     }
 
     private bool mostrarModalCambiarTipo;
@@ -471,14 +471,14 @@ public partial class Consulta
         if (documentoParaCambiar is null) return;
         if (!int.TryParse(tipoSeleccionadoParaCambiar, out var tipoId) || tipoId <= 0)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "Seleccione un tipo válido.");
+            await JsRuntime.InvokeVoidAsync("alert", "Seleccione un tipo válido.");
             return;
         }
 
-        var resultado = await sDocumentosService.CambiarTipoAsync(documentoParaCambiar.Id, tipoId);
+        var resultado = await SDocumentosService.CambiarTipoAsync(documentoParaCambiar.Id, tipoId);
         if (resultado.IsSuccess)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "Tipo actualizado correctamente");
+            await JsRuntime.InvokeVoidAsync("alert", "Tipo actualizado correctamente");
             if (Predio is { } predio)
             {
                 await CargarDocumentosAsync(predio.Id);
@@ -486,7 +486,7 @@ public partial class Consulta
         }
         else
         {
-            await JSRuntime.InvokeVoidAsync("alert", resultado.Error ?? "Error al cambiar tipo");
+            await JsRuntime.InvokeVoidAsync("alert", resultado.Error ?? "Error al cambiar tipo");
         }
 
         mostrarModalCambiarTipo = false;
@@ -511,17 +511,17 @@ public partial class Consulta
         // TODO: Implementar selección múltiple con checkboxes
         if (ids.Count == 0)
         {
-            await JSRuntime.InvokeVoidAsync("alert", "Seleccione al menos un documento.");
+            await JsRuntime.InvokeVoidAsync("alert", "Seleccione al menos un documento.");
             return;
         }
 
-        var tipoId = await JSRuntime.InvokeAsync<int>("prompt", "Ingrese el ID del nuevo tipo para el lote:");
+        var tipoId = await JsRuntime.InvokeAsync<int>("prompt", "Ingrese el ID del nuevo tipo para el lote:");
         if (tipoId > 0)
         {
-            var resultado = await sDocumentosService.CambiarTipoMasivoAsync(ids, tipoId);
+            var resultado = await SDocumentosService.CambiarTipoMasivoAsync(ids, tipoId);
             if (resultado.IsSuccess)
             {
-                await JSRuntime.InvokeVoidAsync("alert", "Tipos actualizados correctamente");
+                await JsRuntime.InvokeVoidAsync("alert", "Tipos actualizados correctamente");
                 if (Predio is { } predio)
                 {
                     await CargarDocumentosAsync(predio.Id);
@@ -529,7 +529,7 @@ public partial class Consulta
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("alert", resultado.Error ?? "Error al cambiar tipos");
+                await JsRuntime.InvokeVoidAsync("alert", resultado.Error ?? "Error al cambiar tipos");
             }
         }
     }
@@ -552,7 +552,7 @@ public partial class Consulta
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("alert", "No tienes permisos para eliminar documentos");
+                await JsRuntime.InvokeVoidAsync("alert", "No tienes permisos para eliminar documentos");
             }
         }
     }
@@ -573,7 +573,7 @@ public partial class Consulta
         var docs = docPendienteEliminar;
 
         // Eliminar el documento de la base de datos
-        var eliminacion = await prediosService.DeleteDocs(docs.Id);
+        var eliminacion = await PrediosService.DeleteDocs(docs.Id);
         if (eliminacion.IsFailure)
         {
             errorBusqueda = eliminacion.Error ?? "No fue posible eliminar el documento.";
@@ -598,7 +598,7 @@ public partial class Consulta
     {
         try
         {
-            var respuesta = await prediosService.GetCoactivo(codigo);
+            var respuesta = await PrediosService.GetCoactivo(codigo);
             ProcesosDto = respuesta.Value ?? new List<ProcesoDto>();
             if (respuesta.IsFailure)
             {

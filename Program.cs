@@ -3,8 +3,6 @@ using Coactivos_Predial.Auth;
 using Coactivos_Predial;
 using Coactivos_Predial.Shared.AppDbContext;
 using Coactivos_Predial.Shared.Components;
-using Coactivos_Predial.Shared.Services;
-using Coactivos_Predial.Shared.Services.DapperHandler;
 using Coactivos_Predial.Shared.Services.Document;
 using Coactivos_Predial.Shared.Services.Document.Endpoints;
 using Coactivos_Predial.Shared.Services.Document.Interfaces;
@@ -22,11 +20,7 @@ using Coactivos_Predial.Shared.Services.SPropietarios;
 using Coactivos_Predial.Shared.Services.SEstadisticas;
 using Coactivos_Predial.Shared.Services.SUser;
 using Coactivos_Predial.Shared.Services.UserAccesor;
-using Coactivos_Predial.Shared.Services.SPropietarios;
-using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using PdfSharp.Fonts;
@@ -104,8 +98,6 @@ builder.Services.AddScoped<TokenProvider>();
 builder.Services.AddSingleton<BusquedaService>();
 
 GlobalFontSettings.FontResolver = new CustomFontResolver();
-SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
-
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddCascadingAuthenticationState();
